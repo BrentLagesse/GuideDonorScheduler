@@ -138,6 +138,7 @@ def perform_mutation(candidate_dna, i, mutant, keep_trying=False):
             # we are safe to make a swap here
             candidate_dna = candidate_dna[:i] + mutation + candidate_dna[i+3:]
 
+
             return True, candidate_dna
     return False, None
 
@@ -189,11 +190,11 @@ def create_mutations(dna, pam, mutant):
     else:
         if pam_case == 1:  # the N is in one acid and the GG is in another
             # TODO: use a breadth first search, try downstream, then upstream, widening the number of changes
-            pam_string_up = dna[pam-2:pam+1]
-            pam_string_down = dna[pam+1:pam+4]
-        elif pam_case == 2:  # the NG is in one acid and the G is in another
             pam_string_up = dna[pam - 1:pam + 2]
             pam_string_down = dna[pam + 2:pam + 5]
+        elif pam_case == 2:  # the NG is in one acid and the G is in another
+            pam_string_up = dna[pam-2:pam+1]
+            pam_string_down = dna[pam + 1:pam + 4]
         replaceable_pam = False
         if pam_string_up in string_to_acid:
             pam_acid_up = string_to_acid[pam_string_up]
@@ -240,7 +241,10 @@ def write_results(frontmatter, results):
         sheet1.write(i + 1, 2, mutation.mutation[0])
         sheet1.write(i + 1, 3, mutation.mutation[1])
         sheet1.write(i + 1, 4, mutation.mutation_loc)
-        sheet1.write(i+1, 5, mutation.dna)
+        if mutation.mutation_loc < mutation.pam:
+            sheet1.write(i+1, 5, mutation.dna[mutation.mutation_loc:mutation.pam+3])
+        else:
+            sheet1.write(i + 1, 5, mutation.dna[mutation.pam+3:mutation.mutation_loc])
         #sheet1.write(1,i,str(mutation.mutation))
         #sheet1.write(2,i,str(m[1]))
         #f.write(new_frontmatter)
