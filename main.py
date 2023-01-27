@@ -12,6 +12,14 @@ class MutationTracker:
     mutation_loc: int
     dna: str
 
+@dataclass
+class GlobalStats:
+    failed_due_to_mutate: int
+    failed_due_to_pam: int
+    succeeded: int
+
+gs = GlobalStats(0,0,0)
+
 GENE_START_BUFFER = 1000
 GENE_END_BUFFER = 1000
 # set up the argument parser so we can accept commandline arguments
@@ -146,6 +154,7 @@ def perform_mutation(candidate_dna, i, mutant, keep_trying=False):
 #pam is the location of the first character of the pam
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
 def create_mutations(dna, pam, mutant):
+    global gs
     UPSTREAM = 100
     DOWNSTREAM = 100
     # TODO: take the 100 upstream and downstream.  mutate pam and introduce additional mutation
@@ -168,6 +177,7 @@ def create_mutations(dna, pam, mutant):
             break
     if not mutation_successful:
         print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
+        gs.failed_due_to_mutate += 1
         return None
 
     #TODO:  Implement downstream
@@ -209,13 +219,15 @@ def create_mutations(dna, pam, mutant):
         if not replaceable_pam:
             return None
 
-        mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam - first_amino_acid_loc - (3-pam_case), pam_mutant_up)
+        mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam - first_amino_acid_loc - pam_case, pam_mutant_up)
 
     if mutation_successful:
         #guide pam mutation mutationloc dna
         result = MutationTracker(pam - first_amino_acid_loc - 20, pam - first_amino_acid_loc, mutant, mutation_location, candidate_dna)
+        gs.succeeded += 1
         return result
     else:
+        gs.failed_due_to_pam += 1
         return None
 
     # TODO:  Track the decisions we made in this method so we can output them
@@ -223,7 +235,11 @@ def create_mutations(dna, pam, mutant):
 
 def write_results(frontmatter, results):
 
+    global gs
 
+    print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
+    print('failed due to pam: ' + str(gs.failed_due_to_pam))
+    print('succeeded: ' + str(gs.succeeded))
 
     wb = Workbook()
     sheet1 = wb.add_sheet('Sheet 1')
