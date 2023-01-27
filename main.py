@@ -210,7 +210,8 @@ def create_mutations(dna, pam, mutant):
         mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam - first_amino_acid_loc - (3-pam_case), pam_mutant_up)
 
     if mutation_successful:
-        result = MutationTracker(pam - first_amino_acid_loc, pam - first_amino_acid_loc - 20, mutant, mutation_location, candidate_dna)
+        #guide pam mutation mutationloc dna
+        result = MutationTracker(pam - first_amino_acid_loc - 20, pam - first_amino_acid_loc, mutant, mutation_location, candidate_dna)
         return result
     else:
         return None
@@ -224,20 +225,22 @@ def write_results(frontmatter, results):
 
     wb = Workbook()
     sheet1 = wb.add_sheet('Sheet 1')
-    sheet1.write(0, 0, 'PAM Location')
-    sheet1.write(0, 1, 'Mutation From')
-    sheet1.write(0, 2, 'Mutation To')
-    sheet1.write(0, 3, 'Mutation Location')
-    sheet1.write(0, 4, 'Result')
+    sheet1.write(0, 0, 'Guide Location')
+    sheet1.write(0, 1, 'PAM Location')
+    sheet1.write(0, 2, 'Mutation From')
+    sheet1.write(0, 3, 'Mutation To')
+    sheet1.write(0, 4, 'Mutation Location')
+    sheet1.write(0, 5, 'Result')
     for i,mutation in enumerate(results):
         #out_file = out_base + '-' + str(mutation.pam) + '-' + mutation.mutation   #create a new file name
         #f = open(out_file, 'w')
         #new_frontmatter = frontmatter + ', mutated '
-        sheet1.write(i + 1, 0, mutation.pam)
-        sheet1.write(i + 1, 1, mutation.mutation[0])
-        sheet1.write(i + 1, 2, mutation.mutation[1])
-        sheet1.write(i + 1, 3, mutation.mutation_loc)
-        sheet1.write(i+1, 4, mutation.dna)
+        sheet1.write(i + 1, 0, mutation.guide)
+        sheet1.write(i + 1, 1, mutation.pam)
+        sheet1.write(i + 1, 2, mutation.mutation[0])
+        sheet1.write(i + 1, 3, mutation.mutation[1])
+        sheet1.write(i + 1, 4, mutation.mutation_loc)
+        sheet1.write(i+1, 5, mutation.dna)
         #sheet1.write(1,i,str(mutation.mutation))
         #sheet1.write(2,i,str(m[1]))
         #f.write(new_frontmatter)
