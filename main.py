@@ -195,6 +195,7 @@ def create_mutations(dna, pam, mutant):
         elif pam_case == 2:  # the NG is in one acid and the G is in another
             pam_string_up = dna[pam-2:pam+1]
             pam_string_down = dna[pam + 1:pam + 4]
+
         replaceable_pam = False
         if pam_string_up in string_to_acid:
             pam_acid_up = string_to_acid[pam_string_up]
@@ -251,7 +252,7 @@ def write_results(frontmatter, results):
         #f.write('\n')
         #f.write(results.dna)
         #f.close()
-    wb.save('out_base.xls')
+    wb.save(out_base + '.xls')
 
 frontmatter, dna = get_dna()
 dna_locs = get_locations(dna)
