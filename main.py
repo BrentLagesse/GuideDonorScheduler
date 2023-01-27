@@ -259,9 +259,13 @@ def write_results(frontmatter, results):
         sheet1.write(i + 1, 3, mutation.mutation[1])
         sheet1.write(i + 1, 4, mutation.mutation_loc)
         if mutation.mutation_loc < mutation.pam:
-            sheet1.write(i+1, 5, mutation.dna[mutation.mutation_loc:mutation.pam+3])
+            #TODO:  is it ok if the mutation location is in the guide?
+            guide_bonus = 0  # in case we need to expand to include the guide
+            if mutation.pam - mutation.mutation_loc < 20:
+                guide_bonus = 20
+            sheet1.write(i+1, 5, mutation.dna[mutation.mutation_loc-guide_bonus:mutation.pam+3])
         else:
-            sheet1.write(i + 1, 5, mutation.dna[mutation.pam+3:mutation.mutation_loc])
+            sheet1.write(i + 1, 5, mutation.dna[mutation.pam - 20 :mutation.mutation_loc])   # make sure to include the upstream guide if we go downstream
         #sheet1.write(1,i,str(mutation.mutation))
         #sheet1.write(2,i,str(m[1]))
         #f.write(new_frontmatter)
