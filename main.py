@@ -22,6 +22,8 @@ gs = GlobalStats(0,0,0)
 
 GENE_START_BUFFER = 1000
 GENE_END_BUFFER = 1000
+UP_ACIDS = 6
+DOWN_ACIDS = 4
 # set up the argument parser so we can accept commandline arguments
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-i", "--input", help="Input File in FSA format")
@@ -155,37 +157,47 @@ def perform_mutation(candidate_dna, i, mutant, keep_trying=False):
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
 def create_mutations(dna, pam, mutant):
     global gs
-    UPSTREAM = 100
-    DOWNSTREAM = 100
-    # TODO: take the 100 upstream and downstream.  mutate pam and introduce additional mutation
+    # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
+    UPSTREAM = UP_ACIDS * 3
+    DOWNSTREAM = DOWN_ACIDS * 3
 
     # introduce mutation
     candidate_start = pam - UPSTREAM
     candidate_end = pam + 3 + DOWNSTREAM
     first_amino_acid_loc = int()
     for i in range(0, 3):    # We want to start on the first amino acid that is within our upstream range
-        if (candidate_start - GENE_START_BUFFER + i) % 3 == 0:   # it is ok if this is negative for the early pam sites
+        if (candidate_start - GENE_START_BUFFER + i) % 3 == 0:
             first_amino_acid_loc = candidate_start + i
+    while first_amino_acid_loc < GENE_START_BUFFER:   #ignore acids outside the gene
+        first_amino_acid_loc += 3
+    if first_amino_acid_loc > pam:   # if we can't get anything upstream, just start at the beginning of the gene
+        first_amino_acid_loc = GENE_START_BUFFER
     candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
-    # TODO:  Question for Talia/Matt -- Do we prefer to be far from the pam, close, middle?
+    mutation_successful = False
     mutation_location = -1
-    for i in range(0, UPSTREAM, 3):    # check upstream, then check downstream
-        mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, i, mutant)
-        if mutation_successful:
-            candidate_dna = temp_candidate_dna
-            mutation_location = i
-            break
+    if first_amino_acid_loc >= GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
+        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
+            if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
+                continue
+            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, i, mutant)
+            if mutation_successful:
+                candidate_dna = temp_candidate_dna
+                mutation_location = i
+                break
+
+    if candidate_end > (len(dna) - GENE_END_BUFFER):   # only do downstream if we are still in the gene
+        pass
+    #TODO:  Implement downstream
+    #for i in range(0, DOWNSTREAM, 3):
+    #    pass
+
+
     if not mutation_successful:
         print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
         gs.failed_due_to_mutate += 1
         return None
 
-    #TODO:  Implement downstream
-    #for i in range(0, DOWNSTREAM, 3):
-    #    pass
-
     # mutate pam
-
     # figure out the pam amino acid situation (does it split, and if so where)
     pam_case = (pam - GENE_START_BUFFER) % 3
 
