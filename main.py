@@ -90,14 +90,14 @@ for acid, strings in codons.items():
 
 
 
-# TODO: fill this out when matt/talia get me preferences
-preferred_mutations = dict()
+
+mutations_to_attempt = dict()
 #fake mutations for testing
-preferred_mutations['ile'] = 'phe'
-preferred_mutations['ala'] = 'tyr'
-preferred_mutations['glu'] = 'arg'
-preferred_mutations['cys'] = 'thr'
-preferred_mutations['val'] = 'ile'
+mutations_to_attempt['met'] = 'val'
+mutations_to_attempt['ala'] = 'tyr'
+mutations_to_attempt['glu'] = 'arg'
+mutations_to_attempt['cys'] = 'thr'
+mutations_to_attempt['val'] = 'ile'
 
 
 def get_dna():
@@ -215,7 +215,7 @@ def create_mutations(dna, pam, mutant):
 
             if mutation_successful:
                 candidate_dna = temp_candidate_dna
-                mutation_location = i
+                mutation_location = candidate_first_amino_acid_loc
                 break
 
     if candidate_end > (len(dna) - GENE_END_BUFFER):   # only do downstream if we are still in the gene
@@ -230,53 +230,59 @@ def create_mutations(dna, pam, mutant):
         gs.failed_due_to_mutate += 1
         return None
 
-    # mutate pam
-    # figure out the pam amino acid situation (does it split, and if so where)
-    pam_case = (pam - GENE_START_BUFFER) % 3
-    mutation_successful = False
-    if pam_case == 0: # we only have a single amino acid
-        pam_string = dna[pam:pam+3]
-        pam_acid = string_to_acid[pam_string]
-        pam_mutant=[pam_acid, pam_acid]
-        mutation_successful, candidate_dna = perform_mutation(candidate_dna, first_amino_acid_loc, pam - first_amino_acid_loc, pam_mutant)
-        if not mutation_successful:
-            print('Failed to find a valid replacement for the pam')
-            return None
-    else:
-        if pam_case == 1:  # the N is in one acid and the GG is in another so we can only replace down
+    #if we wrote over the pam already, we are fine, I think
+    pam_loc_in_candidate = 76   # this is always true
+    if 'GG' in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate+3]):
 
-            pam_string_up = None #dna[pam - 1:pam + 2]
-            pam_string_down = dna[pam + 2:pam + 5]
 
-        elif pam_case == 2:  # the NG is in one acid and the G is in another
-            pam_string_up = dna[pam-2:pam+1]
-            pam_string_down = dna[pam + 1:pam + 4]
+        # mutate pam
+        # figure out the pam amino acid situation (does it split, and if so where)
+        pam_case = (pam - GENE_START_BUFFER) % 3
+        mutation_successful = False
+        if pam_case == 0: # we only have a single amino acid
+            pam_string = dna[pam:pam+3]
+            pam_acid = string_to_acid[pam_string]
+            pam_mutant=[pam_acid, pam_acid]
+            mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, pam - first_amino_acid_loc, pam_mutant)
+            if not mutation_successful:
+                print('Failed to find a valid replacement for the pam')
+                return None
+        else:
+            if pam_case == 1:  # the N is in one acid and the GG is in another so we can only replace down
+    # TODO:  make sure we don't overwrite the mutation by removing the pam
+                pam_string_up = None #dna[pam - 1:pam + 2]
+                pam_string_down = dna[pam + 1:pam + 4]
 
-        replaceable_pam = False
-        pam_mutant_up = None
-        if pam_string_up is not None and pam_string_up in string_to_acid:
-            pam_acid_up = string_to_acid[pam_string_up]
-            replaceable_pam = True
-            pam_mutant_up = [pam_acid_up, pam_acid_up]
-        if pam_string_down in string_to_acid:
-            pam_acid_down = string_to_acid[pam_string_down]
-            replaceable_pam = True
-            pam_mutant_down = [pam_acid_down, pam_acid_down]
-        if not replaceable_pam:
-            return None
-        if pam_mutant_up is not None:
-            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, first_amino_acid_loc, pam - first_amino_acid_loc - pam_case, pam_mutant_up)
-            if mutation_successful:
-                candidate_dna = temp_candidate_dna
-        if not mutation_successful:   #try downstream if upstream didn't work
-            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, first_amino_acid_loc, pam - first_amino_acid_loc - pam_case, pam_mutant_down)
-            if mutation_successful:
-                candidate_dna = temp_candidate_dna
+            elif pam_case == 2:  # the NG is in one acid and the G is in another
+                pam_string_up = dna[pam-2:pam+1]
+                pam_string_down = dna[pam + 2:pam + 5]
+
+            replaceable_pam = False
+            pam_mutant_up = None
+            if pam_string_up is not None and pam_string_up in string_to_acid:
+                pam_acid_up = string_to_acid[pam_string_up]
+                replaceable_pam = True
+                pam_mutant_up = [pam_acid_up, pam_acid_up]
+            if pam_string_down in string_to_acid:
+                pam_acid_down = string_to_acid[pam_string_down]
+                replaceable_pam = True
+                pam_mutant_down = [pam_acid_down, pam_acid_down]
+            if not replaceable_pam:
+                return None
+            if pam_mutant_up is not None:
+                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam - first_amino_acid_loc - pam_case, pam_mutant_up)
+                if mutation_successful:
+                    candidate_dna = temp_candidate_dna
+            if not mutation_successful:   #try downstream if upstream didn't work
+                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam - first_amino_acid_loc - pam_case, pam_mutant_down)
+                if mutation_successful:
+                    candidate_dna = temp_candidate_dna
 
     if mutation_successful:
         candidate_dna = insert_extra_sequence(candidate_dna, guide)
+        # we just added 52 + 20 (guide) basepairs
         #guide pam mutation mutationloc dna
-        result = MutationTracker(pam - first_amino_acid_loc - 20, pam - first_amino_acid_loc, mutant, mutation_location, candidate_dna)
+        result = MutationTracker(0, 76 + 72, mutant, mutation_location + 72, candidate_dna)
         gs.succeeded += 1
         return result
     else:
@@ -296,35 +302,46 @@ def write_results(frontmatter, results):
 
     wb = Workbook()
     sheet1 = wb.add_sheet('Sheet 1')
-    sheet1.write(0, 0, 'Guide Location')
-    sheet1.write(0, 1, 'PAM Location')
-    sheet1.write(0, 2, 'Mutation From')
-    sheet1.write(0, 3, 'Mutation To')
-    sheet1.write(0, 4, 'Mutation Location')
-    sheet1.write(0, 5, 'Result')
+    sheet1.write(0, 0, 'Mutation From')
+    sheet1.write(0, 1, 'Mutation To')
+    sheet1.write(0, 2, 'Mutation Location')
+    sheet1.write(0, 3, 'Result')
+
+    extra_font = xlwt.easyfont('color_index gray50')
+    mutation_font = xlwt.easyfont('color_index red')
+    guide_font = xlwt.easyfont('color_index blue')
+    pam_font = xlwt.easyfont('color_index green')
+    dna_font = xlwt.easyfont('color_index black')
+
+    first = 'GACCGTGCGACTGGGCGTCTCGGATC'
+    second = 'GTTTGAAGAGCATACGCTCTTCTTCT'
+    third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+
     for i,mutation in enumerate(results):
-        #out_file = out_base + '-' + str(mutation.pam) + '-' + mutation.mutation   #create a new file name
-        #f = open(out_file, 'w')
-        #new_frontmatter = frontmatter + ', mutated '
-        sheet1.write(i + 1, 0, mutation.guide)
-        sheet1.write(i + 1, 1, mutation.pam)
-        sheet1.write(i + 1, 2, mutation.mutation[0])
-        sheet1.write(i + 1, 3, mutation.mutation[1])
-        sheet1.write(i + 1, 4, mutation.mutation_loc)
-        if mutation.mutation_loc < mutation.pam:
-            #TODO:  is it ok if the mutation location is in the guide?
-            guide_bonus = 0  # in case we need to expand to include the guide
-            if mutation.pam - mutation.mutation_loc < 20:
-                guide_bonus = 20
-            sheet1.write(i+1, 5, mutation.dna[mutation.mutation_loc-guide_bonus:mutation.pam+3])
-        else:
-            sheet1.write(i + 1, 5, mutation.dna[mutation.pam - 20 :mutation.mutation_loc])   # make sure to include the upstream guide if we go downstream
-        #sheet1.write(1,i,str(mutation.mutation))
-        #sheet1.write(2,i,str(m[1]))
-        #f.write(new_frontmatter)
-        #f.write('\n')
-        #f.write(results.dna)
-        #f.close()
+        sheet1.write(i + 1, 0, mutation.mutation[0])
+        sheet1.write(i + 1, 1, mutation.mutation[1])
+        sheet1.write(i + 1, 2, mutation.mutation_loc)
+        seg_first = (mutation.dna[0:len(first)], extra_font)
+        seg_guide = (mutation.dna[len(first):len(first)+20], guide_font)
+        seg_second = (mutation.dna[len(first)+20:len(first)+20+len(second)], extra_font)
+        seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
+        seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
+        seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
+
+        if mutation.mutation_loc < mutation.pam:  #upstream mutation
+            seg_dna1 = (mutation.dna[len(first)+20+len(second):mutation.mutation_loc], dna_font)
+            seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
+            seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
+            sheet1.write_rich_text(i + 1, 3, (
+            seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
+        else:    #downstream mutation
+            seg_dna1 = (mutation.dna[len(first) + 20 + len(second):mutation.pam], dna_font)
+            seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
+            seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
+            sheet1.write_rich_text(i + 1, 3, (
+            seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
+
+
     wb.save(out_base + '.xls')
 
 frontmatter, dna = get_dna()
@@ -334,7 +351,7 @@ for loc in dna_locs:
     # I don't think we need to actually find the guides here since it is just pam - 20
     #guides = create_guides(dna, loc)
     #for g in guides:   # for each guide do each mutation
-    for m in preferred_mutations.items():
+    for m in mutations_to_attempt.items():
         mutated_dna = create_mutations(dna, loc, m)
         if mutated_dna is not None:
             all_mutations.append(mutated_dna)
