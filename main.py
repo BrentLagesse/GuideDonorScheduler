@@ -149,7 +149,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, i, mutant, keep_trying
         for mutation in valid_mutations:
             if mutation == candidate_dna[first_amino_acid_loc:first_amino_acid_loc+3]:  #This is what we already have, so it isn't a mutation
                 continue
-
+                # TODO:  If we are a pam, don't replace with G in the same place
                 #     if possible, I would like to avoid mutating the PAM to NAG.
             #    2. If you can’t mutate the PAM then mutate at least one location in the “seed” region (10 bases upstream of the PAM). The closer the silent mutation is to the PAM the better it works. We may decide that we want to do two silent mutations if we find that one in the seed region isn’t enough to prevent re-cutting.
     #3. Oftentimes the mutation we intend to make will be in the seed.
@@ -167,6 +167,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, i, mutant, keep_trying
             #        continue
 
             # we are safe to make a swap here
+
             candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc+3:]
 
 
@@ -254,7 +255,7 @@ def create_mutations(dna, pam, mutant):
                 pam_string_down = dna[pam + 1:pam + 4]
 
             elif pam_case == 2:  # the NG is in one acid and the G is in another
-                pam_string_up = dna[pam-2:pam+1]
+                pam_string_up = dna[pam-1:pam+2]
                 pam_string_down = dna[pam + 2:pam + 5]
 
             replaceable_pam = False
