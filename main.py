@@ -95,7 +95,7 @@ mutations_to_attempt = dict()
 #fake mutations for testing
 mutations_to_attempt['met'] = 'val'
 mutations_to_attempt['ala'] = 'tyr'
-mutations_to_attempt['glu'] = 'arg'
+mutations_to_attempt['*'] = 'arg'
 mutations_to_attempt['cys'] = 'thr'
 mutations_to_attempt['val'] = 'ile'
 
@@ -144,7 +144,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, i, mutant, keep_trying
     else:
         return False, None
 
-    if mutant[0] == amino_acid:  # we found our target, lets make the swap!
+    if mutant[0] == amino_acid or mutant[0] == '*':  # we found our target, lets make the swap!
         valid_mutations = codons[mutant[1]]  # get a list of valid mutations
         for mutation in valid_mutations:
             if mutation == candidate_dna[first_amino_acid_loc:first_amino_acid_loc+3]:  #This is what we already have, so it isn't a mutation
