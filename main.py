@@ -137,21 +137,49 @@ def insert_extra_sequence(candidate_dna, guide):
     return first + guide + second + candidate_dna + third
 
 
-def perform_mutation(candidate_dna, first_amino_acid_loc, i, mutant, keep_trying=False):
+def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep_trying=False, distance_from_pam = 0):
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc+3]
     if amino_acid_str in string_to_acid:   # if this is something that isn't an amino acid, just quit
         amino_acid = string_to_acid[amino_acid_str]
     else:
         return False, None
 
+
     if mutant[0] == amino_acid or mutant[0] == '*':  # we found our target, lets make the swap!
-        valid_mutations = codons[mutant[1]]  # get a list of valid mutations
+        if mutant[0] == '*' and mutant[1] == '*':
+            valid_mutations = codons[amino_acid]   # choose a silent mutation for whatever we are looking at
+        else:
+            valid_mutations = codons[mutant[1]]  # get a list of valid mutations
         for mutation in valid_mutations:
-            if mutation == candidate_dna[first_amino_acid_loc:first_amino_acid_loc+3]:  #This is what we already have, so it isn't a mutation
+            if mutant[0] == mutant[1] or pam_case != 0:  # this is only true for PAM or seed-option for pam
+                replaceable = True
+                #identify the cases where we can't replace the PAM
+                if pam_case == 1 and mutation[0] == 'G' and mutation[1] == 'G':  # this would replace GG with GG
+                    replaceable = False
+
+                #if mutation[2] == 'G' and amino_acid_str[2] == 'G':  # this would introduce a GG on the back end
+
+                if mutation == candidate_dna[first_amino_acid_loc:first_amino_acid_loc + 3]:  #can't replace pam
+                    replaceable = False
+
+                #TODO: don't overwrite the original mutation
+
+                # we couldn't replace it, so lets try option #2, the seed (10 bases upstream)
+                if not replaceable:
+                    if distance_from_pam > 10:  # Couldn't find anything in the seed, so quit
+                        return False, None
+                    mutant[0] = '*'   #these two *s force any silent mutation
+                    mutant[1] = '*'
+                    return perform_mutation(candidate_dna, first_amino_acid_loc-3, 3, mutant, distance_from_pam=distance_from_pam+3)
+
+            elif mutation == candidate_dna[first_amino_acid_loc:first_amino_acid_loc+3]:  #This is what we already have, so it isn't a mutation
                 continue
                 # TODO:  If we are a pam, don't replace with G in the same place
+
+
                 #     if possible, I would like to avoid mutating the PAM to NAG.
             #    2. If you can’t mutate the PAM then mutate at least one location in the “seed” region (10 bases upstream of the PAM). The closer the silent mutation is to the PAM the better it works. We may decide that we want to do two silent mutations if we find that one in the seed region isn’t enough to prevent re-cutting.
+
     #3. Oftentimes the mutation we intend to make will be in the seed.
      #   a. If it is still possible to make a silent PAM mutation then that would be good (Although we are currently testing this and this parameter might change).
       #  b. If there is no way to make a silent PAM mutation and the mutation is more than 5 bases away from the PAM then the next best thing would be to make a silent mutation within the 5 bases upstream of the PAM.
@@ -159,12 +187,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, i, mutant, keep_trying
 
 
                 # This is from when I thought we couldn't introduce a new GG
-            #if mutation[0] == 'G' and candidate_dna[amino_loc - 1] == 'G':  # this would introduce a GG on the front end
-            #    if not keep_trying:
-            #        continue
-            #if mutation[2] == 'G' and candidate_dna[amino_loc - 4] == 'G':  # this would introduce a GG on the back end
-            #    if not keep_trying:
-            #        continue
+
 
             # we are safe to make a swap here
 
@@ -212,7 +235,7 @@ def create_mutations(dna, pam, mutant):
                 continue
             #convert first_amino_acid_loc from global dna to candidate dna
             candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
-            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, i, mutant)
+            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
 
             if mutation_successful:
                 candidate_dna = temp_candidate_dna
@@ -244,7 +267,7 @@ def create_mutations(dna, pam, mutant):
             pam_string = dna[pam:pam+3]
             pam_acid = string_to_acid[pam_string]
             pam_mutant=[pam_acid, pam_acid]
-            mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, pam - first_amino_acid_loc, pam_mutant)
+            mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant)
             if not mutation_successful:
                 print('Failed to find a valid replacement for the pam')
                 return None
@@ -271,11 +294,11 @@ def create_mutations(dna, pam, mutant):
             if not replaceable_pam:
                 return None
             if pam_mutant_up is not None:
-                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam - first_amino_acid_loc - pam_case, pam_mutant_up)
+                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up)
                 if mutation_successful:
                     candidate_dna = temp_candidate_dna
             if not mutation_successful:   #try downstream if upstream didn't work
-                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam - first_amino_acid_loc - pam_case, pam_mutant_down)
+                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down)
                 if mutation_successful:
                     candidate_dna = temp_candidate_dna
 
