@@ -415,11 +415,13 @@ def write_results(frontmatter, results):
 
 # 1)  Choose the gene to mutate
 frontmatter, dna = get_dna()
-inv_dna = invert_dna(dna)
+inv_dna_full = invert_dna(dna)
 # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
 #  This function finds all the pams
 dna_locs = get_locations(dna)
+
 # get the dna locations in the complement strand
+inv_dna_locs = get_locations(inv_dna_full)
 
 all_mutations = []
 for loc in dna_locs:
@@ -431,6 +433,32 @@ for loc in dna_locs:
         mutated_dna = create_mutations(dna, loc, m)
         if mutated_dna is not None:
             all_mutations.append(mutated_dna)
+
+
+#class MutationTracker:
+#    guide: int
+#    pam: int
+#    mutation: []
+#    mutation_loc: int
+#    dna: str
+
+for loc in inv_dna_locs:
+    # I don't think we need to actually find the guides here since it is just pam - 20
+    #guides = create_guides(dna, loc)
+    #for g in guides:   # for each guide do each mutation
+
+    for m in mutations_to_attempt.items():
+        mutated_dna = create_mutations(inv_dna_full, loc, m)  #returns a mutation tracker
+        if mutated_dna is not None:
+            #revert to original
+            inv_guide = mutated_dna.guide
+            inv_pam = len(mutated_dna.dna) - mutated_dna.pam
+            inv_mutation = []
+
+            inv_mutation_loc = len(mutated_dna.dna) - mutated_dna.mutation_loc
+            inv_dna = invert_dna(mutated_dna.dna)
+            inv_mutated_dna = MutationTracker(inv_guide, inv_pam, mutated_dna.mutation, inv_mutation_loc, inv_dna)
+            all_mutations.append(inv_mutated_dna)
 
 
 # at this point, we have everything we need to output the results
