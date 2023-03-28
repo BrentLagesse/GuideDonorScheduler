@@ -4,6 +4,10 @@ from dataclasses import dataclass
 import xlwt
 from xlwt import Workbook
 
+
+
+
+
 @dataclass
 class MutationTracker:
     guide: int
@@ -59,6 +63,7 @@ cys = ['TGT', 'TGC']
 trp = ['TGG']
 arg = ['AGA', 'CGC', 'CGA', 'CGG', 'CGT', 'AGG']
 gly = ['GGT', 'GGC', 'GGA', 'GGG']
+stop = ['TAA', 'TAG', 'TGA']
 
 codons['leu'] = leu
 codons['phe'] = phe
@@ -80,6 +85,14 @@ codons['cys'] = cys
 codons['trp'] = trp
 codons['arg'] = arg
 codons['gly'] = gly
+
+invert_mapping = dict()
+invert_mapping['T'] = 'A'
+invert_mapping['A'] = 'T'
+invert_mapping['G'] = 'C'
+invert_mapping['C'] = 'G'
+
+
 
 string_to_acid = dict()
 
@@ -137,12 +150,23 @@ def insert_extra_sequence(candidate_dna, guide):
     return first + guide + second + candidate_dna + third
 
 
-def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep_trying=False, distance_from_pam = 0):
+def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep_trying=False, distance_from_pam = 0, mutation_location = -1):
+    # if first_amino_acid_loc > 76, we are replacing downstream
+    if first_amino_acid_loc == mutation_location:   # we would be replacing the mutation
+        if distance_from_pam <= 5:    #don't mutate
+            print ('we did not mutate the pam because the mutation was withing 5 base pairs of pam')
+            return True, candidate_dna
+        return False, None
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc+3]
     if amino_acid_str in string_to_acid:   # if this is something that isn't an amino acid, just quit
         amino_acid = string_to_acid[amino_acid_str]
     else:
-        return False, None
+        if amino_acid_str in stop:
+            print('Ran into a stop codon: ' + amino_acid_str)
+            return False, None
+        else:
+            print('Somehow we ran into something that was not an amino acid: ' + amino_acid_str)
+            return False, None
 
 
     if mutant[0] == amino_acid or mutant[0] == '*':  # we found our target, lets make the swap!
@@ -150,6 +174,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             valid_mutations = codons[amino_acid]   # choose a silent mutation for whatever we are looking at
         else:
             valid_mutations = codons[mutant[1]]  # get a list of valid mutations
+        replaceable = True
         for mutation in valid_mutations:
             if mutant[0] == mutant[1] or pam_case != 0:  # this is only true for PAM or seed-option for pam
                 replaceable = True
@@ -165,12 +190,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
                 #TODO: don't overwrite the original mutation
 
                 # we couldn't replace it, so lets try option #2, the seed (10 bases upstream)
-                if not replaceable:
-                    if distance_from_pam > 10:  # Couldn't find anything in the seed, so quit
-                        return False, None
-                    mutant[0] = '*'   #these two *s force any silent mutation
-                    mutant[1] = '*'
-                    return perform_mutation(candidate_dna, first_amino_acid_loc-3, 3, mutant, distance_from_pam=distance_from_pam+3)
+
 
             elif mutation == candidate_dna[first_amino_acid_loc:first_amino_acid_loc+3]:  #This is what we already have, so it isn't a mutation
                 continue
@@ -190,12 +210,21 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 
 
             # we are safe to make a swap here
-
-            candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc+3:]
-
-
-            return True, candidate_dna
+            if replaceable:
+                candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc+3:]
+                return True, candidate_dna
+        if not replaceable:
+            if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
+                print('Could not find a replacement in the seed')
+                return False, None
+            mutant[0] = '*'  # these two *s force any silent mutation
+            mutant[1] = '*'
+            return perform_mutation(candidate_dna, first_amino_acid_loc - 3, 3, mutant,
+                                    distance_from_pam=distance_from_pam + 3)
     return False, None
+
+
+
 
 #THis method will return a full dna string for each mutation as part of a MutationTracker type
 #pam is the location of the first character of the pam
@@ -206,15 +235,18 @@ def create_mutations(dna, pam, mutant):
     UPSTREAM = UP_ACIDS * 3
     DOWNSTREAM = DOWN_ACIDS * 3
 
+    # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = dna[pam-20:pam]
 
     # introduce mutation
-    # TODO:  Grab 132 base pairs surrounding the halfway point between the pam and the mutation
-    # TODO:  Or we can grab 132 from the center of the guide
+
+    #2a a. To make the donor, take 132 base pairs surrounding the mutations (either centered around both the main mutation and the PAM mutation, or if easier could just center all the donors for a given guide around the PAM).
     # PAM + 10 is the center of the guide + 66 on each side of it
     candidate_start = pam - 10 - 66 #pam - UPSTREAM
     candidate_end = pam - 10 + 66 #pam + 3 + DOWNSTREAM
     candidate_dna = dna[candidate_start:candidate_end]   # this is the 132 base pairs surrounding the middle of the guide
+
+    # 2)  Find the amino acid you want to mutate
 
     first_amino_acid_loc = int()
     for i in range(0, 3):    # We want to start on the first amino acid that is within our upstream range
@@ -235,6 +267,7 @@ def create_mutations(dna, pam, mutant):
                 continue
             #convert first_amino_acid_loc from global dna to candidate dna
             candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+            # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
 
             if mutation_successful:
@@ -259,17 +292,20 @@ def create_mutations(dna, pam, mutant):
     if 'GG' in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate+3]):
 
 
-        # mutate pam
+        # 2)  mutate pam
         # figure out the pam amino acid situation (does it split, and if so where)
         pam_case = (pam - GENE_START_BUFFER) % 3
         mutation_successful = False
+        if pam == 1004:
+            pass
         if pam_case == 0: # we only have a single amino acid
             pam_string = dna[pam:pam+3]
             pam_acid = string_to_acid[pam_string]
             pam_mutant=[pam_acid, pam_acid]
-            mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant)
+            mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant, mutation_location=mutation_location)
             if not mutation_successful:
                 print('Failed to find a valid replacement for the pam')
+                gs.failed_due_to_pam += 1
                 return None
         else:
             if pam_case == 1:  # the N is in one acid and the GG is in another so we can only replace down
@@ -294,11 +330,11 @@ def create_mutations(dna, pam, mutant):
             if not replaceable_pam:
                 return None
             if pam_mutant_up is not None:
-                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up)
+                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up, mutation_location=mutation_location)
                 if mutation_successful:
                     candidate_dna = temp_candidate_dna
             if not mutation_successful:   #try downstream if upstream didn't work
-                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down)
+                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down, mutation_location=mutation_location)
                 if mutation_successful:
                     candidate_dna = temp_candidate_dna
 
@@ -310,11 +346,20 @@ def create_mutations(dna, pam, mutant):
         gs.succeeded += 1
         return result
     else:
+        print('Mutation failed due to pam')   #TODO:  output why
         gs.failed_due_to_pam += 1
         return None
 
     # TODO:  Track the decisions we made in this method so we can output them
     # TODO:  Fix naming of the file and frontmatter
+
+# This method inverts the DNA so we can get the reverse complement strand
+def invert_dna(dna):
+    backwards_dna = dna[::-1]
+    inv_dna = str()
+    for base in backwards_dna:
+        inv_dna += invert_mapping[base]
+    return inv_dna
 
 def write_results(frontmatter, results):
 
@@ -368,13 +413,20 @@ def write_results(frontmatter, results):
 
     wb.save(out_base + '.xls')
 
+# 1)  Choose the gene to mutate
 frontmatter, dna = get_dna()
+inv_dna = invert_dna(dna)
+# 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
+#  This function finds all the pams
 dna_locs = get_locations(dna)
+# get the dna locations in the complement strand
+
 all_mutations = []
 for loc in dna_locs:
     # I don't think we need to actually find the guides here since it is just pam - 20
     #guides = create_guides(dna, loc)
     #for g in guides:   # for each guide do each mutation
+
     for m in mutations_to_attempt.items():
         mutated_dna = create_mutations(dna, loc, m)
         if mutated_dna is not None:
