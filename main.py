@@ -229,7 +229,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 #THis method will return a full dna string for each mutation as part of a MutationTracker type
 #pam is the location of the first character of the pam
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
-def create_mutations(dna, pam, mutant):
+def create_mutations(dna, pam, mutant, complement=False):
     global gs
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
     UPSTREAM = UP_ACIDS * 3
@@ -339,6 +339,9 @@ def create_mutations(dna, pam, mutant):
                     candidate_dna = temp_candidate_dna
 
     if mutation_successful:
+        if complement:   # if we are on the reverse complement, invert it back before we add the other stuff
+            candidate_dna = invert_dna(candidate_dna)
+            guide = invert_dna(guide)
         candidate_dna = insert_extra_sequence(candidate_dna, guide)
         # we just added 52 + 20 (guide) basepairs
         #guide pam mutation mutationloc dna
@@ -361,6 +364,7 @@ def invert_dna(dna):
         inv_dna += invert_mapping[base]
     return inv_dna
 
+#print(invert_dna('GACCGTGCGACTGGGCGTCTCGGATCTAAGCTTTTGAATATTCCCTGTTTGAAGAGCATACGCTCTTCTTCTAACTTGATAAAATAAATATCCAGTCTGATAAATTGACAAGCTCAATTAAATCCAGAAAGCTGAAAGCTGAGGGAATATTCAAAAGCTTACTGGATACGTTGAGGCAATACGATTCGTCGATACAAAATTTAAACATCGAGACGTGTCCCTGCCTTGCG'))
 def write_results(frontmatter, results):
 
     global gs
@@ -443,22 +447,19 @@ for loc in dna_locs:
 #    dna: str
 
 for loc in inv_dna_locs:
-    # I don't think we need to actually find the guides here since it is just pam - 20
-    #guides = create_guides(dna, loc)
-    #for g in guides:   # for each guide do each mutation
-
     for m in mutations_to_attempt.items():
-        mutated_dna = create_mutations(inv_dna_full, loc, m)  #returns a mutation tracker
+        mutated_dna = create_mutations(inv_dna_full, loc, m, complement=True)  #returns a mutation tracker
         if mutated_dna is not None:
-            #revert to original
-            inv_guide = mutated_dna.guide
-            inv_pam = len(mutated_dna.dna) - mutated_dna.pam
-            inv_mutation = []
+            #revert to original  -- Maybe we don't need to do this?
+            #inv_guide = mutated_dna.guide
+            #inv_pam = len(mutated_dna.dna) - mutated_dna.pam
+            #inv_mutation = []
+            #inv_mutation_loc = len(mutated_dna.dna) - mutated_dna.mutation_loc
+            #inv_dna = invert_dna(mutated_dna.dna)
+            #inv_mutated_dna = MutationTracker(inv_guide, inv_pam, mutated_dna.mutation, inv_mutation_loc, inv_dna)
+            #all_mutations.append(inv_mutated_dna)
 
-            inv_mutation_loc = len(mutated_dna.dna) - mutated_dna.mutation_loc
-            inv_dna = invert_dna(mutated_dna.dna)
-            inv_mutated_dna = MutationTracker(inv_guide, inv_pam, mutated_dna.mutation, inv_mutation_loc, inv_dna)
-            all_mutations.append(inv_mutated_dna)
+            all_mutations.append(mutated_dna)
 
 
 # at this point, we have everything we need to output the results
