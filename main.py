@@ -15,6 +15,7 @@ class MutationTracker:
     mutation: []
     mutation_loc: int
     dna: str
+    complement: bool
 
 @dataclass
 class GlobalStats:
@@ -108,7 +109,7 @@ mutations_to_attempt = dict()
 #fake mutations for testing
 mutations_to_attempt['met'] = 'val'
 mutations_to_attempt['ala'] = 'tyr'
-mutations_to_attempt['*'] = 'arg'
+#mutations_to_attempt['*'] = 'arg'
 mutations_to_attempt['cys'] = 'thr'
 mutations_to_attempt['val'] = 'ile'
 
@@ -339,13 +340,17 @@ def create_mutations(dna, pam, mutant, complement=False):
                     candidate_dna = temp_candidate_dna
 
     if mutation_successful:
+        pam_loc = pam_loc_in_candidate
         if complement:   # if we are on the reverse complement, invert it back before we add the other stuff
             candidate_dna = invert_dna(candidate_dna)
             guide = invert_dna(guide)
+            mutation_location = len(candidate_dna) - mutation_location
+            pam_loc = len(candidate_dna) - pam_loc
+
         candidate_dna = insert_extra_sequence(candidate_dna, guide)
         # we just added 52 + 20 (guide) basepairs
         #guide pam mutation mutationloc dna
-        result = MutationTracker(0, 76 + 72, mutant, mutation_location + 72, candidate_dna)
+        result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement)
         gs.succeeded += 1
         return result
     else:
@@ -378,7 +383,9 @@ def write_results(frontmatter, results):
     sheet1.write(0, 0, 'Mutation From')
     sheet1.write(0, 1, 'Mutation To')
     sheet1.write(0, 2, 'Mutation Location')
-    sheet1.write(0, 3, 'Result')
+    sheet1.write(0, 3, 'Reverse Complement')
+    sheet1.write(0, 4, 'Result')
+
 
     extra_font = xlwt.easyfont('color_index gray50')
     mutation_font = xlwt.easyfont('color_index red')
@@ -401,19 +408,20 @@ def write_results(frontmatter, results):
         seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
         seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
 
+
         if mutation.mutation_loc < mutation.pam:  #upstream mutation
             seg_dna1 = (mutation.dna[len(first)+20+len(second):mutation.mutation_loc], dna_font)
             seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
             seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + 1, 3, (
+            sheet1.write_rich_text(i + 1, 4, (
             seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
         else:    #downstream mutation
             seg_dna1 = (mutation.dna[len(first) + 20 + len(second):mutation.pam], dna_font)
             seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
             seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + 1, 3, (
+            sheet1.write_rich_text(i + 1, 4, (
             seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
-
+        sheet1.write(i+1, 3, mutation.complement)
 
     wb.save(out_base + '.xls')
 
