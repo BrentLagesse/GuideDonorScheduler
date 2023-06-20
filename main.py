@@ -4,7 +4,8 @@ from dataclasses import dataclass
 import xlwt
 from xlwt import Workbook
 
-
+# Other config module
+import config.py
 
 
 
@@ -25,12 +26,6 @@ class GlobalStats:
 
 gs = GlobalStats(0,0,0)
 
-
-
-GENE_START_BUFFER = 1000
-GENE_END_BUFFER = 1000
-UP_ACIDS = 6
-DOWN_ACIDS = 4
 # set up the argument parser so we can accept commandline arguments
 argParser = argparse.ArgumentParser()
 argParser.add_argument("-i", "--input", help="Input File in FSA format")
@@ -40,52 +35,31 @@ args = argParser.parse_args()
 in_file = args.input
 out_base = args.output
 
-#set up codon lookup table
+# set up codon lookup table
 codons = dict()
 
-# The one we prefer most is placed at the front of the list
-leu = ['TTG', 'TTA', 'CTT', 'CTC', 'CTA', 'CTG']
-phe = ['TTT', 'TTC']
-ile = ['ATT', 'ATC', 'ATA']
-met = ['ATG']
-val = ['GTT', 'GTC', 'GTA', 'GTG']
-ser = ['TCT', 'TCC', 'TCA', 'TCG', 'AGT', 'AGC']
-pro = ['CCA', 'CCC', 'CCT', 'CCG']
-thr = ['ACT', 'ACC', 'ACA', 'ACG']
-ala = ['GCT', 'GCC', 'GCA',  'GCG']
-tyr = ['TAT', 'TAC']
-his = ['CAT', 'CAC']
-gln = ['CAA', 'CAG']
-asn = ['AAT', 'AAC']
-lys = ['AAA', 'AAG']
-asp = ['GAT', 'GAC']
-glu = ['GAA', 'GAG']
-cys = ['TGT', 'TGC']
-trp = ['TGG']
-arg = ['AGA', 'CGC', 'CGA', 'CGG', 'CGT', 'AGG']
-gly = ['GGT', 'GGC', 'GGA', 'GGG']
-stop = ['TAA', 'TAG', 'TGA']
+# all codons are defined in config.py in the CODON SETUP section
 
-codons['leu'] = leu
-codons['phe'] = phe
-codons['ile'] = ile
-codons['met'] = met
-codons['val'] = val
-codons['ser'] = ser
-codons['pro'] = pro
-codons['thr'] = thr
-codons['ala'] = ala
-codons['tyr'] = tyr
-codons['his'] = his
-codons['gln'] = gln
-codons['asn'] = asn
-codons['lys'] = lys
-codons['asp'] = asp
-codons['glu'] = glu
-codons['cys'] = cys
-codons['trp'] = trp
-codons['arg'] = arg
-codons['gly'] = gly
+codons['leu'] = config.leu
+codons['phe'] = config.phe
+codons['ile'] = config.ile
+codons['met'] = config.met
+codons['val'] = config.val
+codons['ser'] = config.ser
+codons['pro'] = config.pro
+codons['thr'] = config.thr
+codons['ala'] = config.ala
+codons['tyr'] = config.tyr
+codons['his'] = config.his
+codons['gln'] = config.gln
+codons['asn'] = config.asn
+codons['lys'] = config.lys
+codons['asp'] = config.asp
+codons['glu'] = config.glu
+codons['cys'] = config.cys
+codons['trp'] = config.trp
+codons['arg'] = config.arg
+codons['gly'] = config.gly
 
 invert_mapping = dict()
 invert_mapping['T'] = 'A'
@@ -100,18 +74,6 @@ string_to_acid = dict()
 for acid, strings in codons.items():
     for s in strings:
         string_to_acid[s] = acid
-
-
-
-
-
-mutations_to_attempt = dict()
-#fake mutations for testing
-mutations_to_attempt['met'] = 'val'
-mutations_to_attempt['ala'] = 'tyr'
-#mutations_to_attempt['*'] = 'arg'
-mutations_to_attempt['cys'] = 'thr'
-mutations_to_attempt['val'] = 'ile'
 
 
 def get_dna():
@@ -129,8 +91,8 @@ def get_dna():
 
 def get_locations(dna):
     #find all of the locations of the NGG or CCN triples
-    gene_only = dna[GENE_START_BUFFER:len(dna)-GENE_END_BUFFER]
-    gg_locs = [loc.start()+GENE_START_BUFFER - 1 for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
+    gene_only = dna[config.GENE_START_BUFFER:len(dna)-config.GENE_END_BUFFER]
+    gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
 
     return gg_locs
 
@@ -162,7 +124,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
     if amino_acid_str in string_to_acid:   # if this is something that isn't an amino acid, just quit
         amino_acid = string_to_acid[amino_acid_str]
     else:
-        if amino_acid_str in stop:
+        if amino_acid_str in config.stop:
             print('Ran into a stop codon: ' + amino_acid_str)
             return False, None
         else:
@@ -233,8 +195,8 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 def create_mutations(dna, pam, mutant, complement=False):
     global gs
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
-    UPSTREAM = UP_ACIDS * 3
-    DOWNSTREAM = DOWN_ACIDS * 3
+    UPSTREAM = config.UP_ACIDS * 3
+    DOWNSTREAM = config.DOWN_ACIDS * 3
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = dna[pam-20:pam]
@@ -251,18 +213,18 @@ def create_mutations(dna, pam, mutant, complement=False):
 
     first_amino_acid_loc = int()
     for i in range(0, 3):    # We want to start on the first amino acid that is within our upstream range
-        if (pam - UPSTREAM - GENE_START_BUFFER + i) % 3 == 0:
+        if (pam - UPSTREAM - config.GENE_START_BUFFER + i) % 3 == 0:
             first_amino_acid_loc = pam - UPSTREAM + i
-    while first_amino_acid_loc < GENE_START_BUFFER:   #ignore acids outside the gene
+    while first_amino_acid_loc < config.GENE_START_BUFFER:   #ignore acids outside the gene
         first_amino_acid_loc += 3
     if first_amino_acid_loc > pam:   # if we can't get anything upstream, just start at the beginning of the gene
-        first_amino_acid_loc = GENE_START_BUFFER
+        first_amino_acid_loc = config.GENE_START_BUFFER
 
     #candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
 
     mutation_successful = False
     mutation_location = -1
-    if first_amino_acid_loc >= GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
+    if first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
         for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
             if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
                 continue
@@ -276,7 +238,7 @@ def create_mutations(dna, pam, mutant, complement=False):
                 mutation_location = candidate_first_amino_acid_loc
                 break
 
-    if candidate_end > (len(dna) - GENE_END_BUFFER):   # only do downstream if we are still in the gene
+    if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # only do downstream if we are still in the gene
         pass
     #TODO:  Implement downstream
     #for i in range(0, DOWNSTREAM, 3):
@@ -295,7 +257,7 @@ def create_mutations(dna, pam, mutant, complement=False):
 
         # 2)  mutate pam
         # figure out the pam amino acid situation (does it split, and if so where)
-        pam_case = (pam - GENE_START_BUFFER) % 3
+        pam_case = (pam - config.GENE_START_BUFFER) % 3
         mutation_successful = False
         if pam == 1004:
             pass
@@ -441,7 +403,7 @@ for loc in dna_locs:
     #guides = create_guides(dna, loc)
     #for g in guides:   # for each guide do each mutation
 
-    for m in mutations_to_attempt.items():
+    for m in config.mutations_to_attempt.items():
         mutated_dna = create_mutations(dna, loc, m)
         if mutated_dna is not None:
             all_mutations.append(mutated_dna)
@@ -455,7 +417,7 @@ for loc in dna_locs:
 #    dna: str
 
 for loc in inv_dna_locs:
-    for m in mutations_to_attempt.items():
+    for m in config.mutations_to_attempt.items():
         mutated_dna = create_mutations(inv_dna_full, loc, m, complement=True)  #returns a mutation tracker
         if mutated_dna is not None:
             #revert to original  -- Maybe we don't need to do this?
