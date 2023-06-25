@@ -5,7 +5,7 @@ import xlwt
 from xlwt import Workbook
 
 # Other config module
-import config.py
+import config
 
 
 
@@ -77,6 +77,26 @@ for acid, strings in codons.items():
 
 
 def get_dna():
+    
+    global in_file
+    global out_base
+    
+    # Checks if argument inputs are present, otherwise defaults to what is in config
+    
+    # Checking in_file
+    if (in_file == None):
+        print("No input file detected, using default.")
+        in_file = config.DEFAULT_IN_FILE
+        if (config.DEFAULT_IN_FILE == None):
+                print("No default input file present.")
+    
+    # Checking out_file
+    if (out_base == None):
+        print("No output file detected, using default.")
+        out_base = config.DEFAULT_OUT_FILE
+        if (config.DEFAULT_OUT_FILE == None):
+                print("No default output file present.")
+    
     # open the input file
     input_data = open(in_file, 'r')
 
@@ -386,6 +406,9 @@ def write_results(frontmatter, results):
         sheet1.write(i+1, 3, mutation.complement)
 
     wb.save(out_base + '.xls')
+
+
+
 
 # 1)  Choose the gene to mutate
 frontmatter, dna = get_dna()
