@@ -27,6 +27,8 @@ mutations_to_attempt['val'] = 'ile'
 DEFAULT_IN_FILE = None
 DEFAULT_OUT_FILE = None
 
+QUIT_ON_NO_DATA = True
+
 
 # ----------------------------------------------------
 #

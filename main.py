@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 import xlwt
 from xlwt import Workbook
+import sys
 
 # Other config module
 import config
@@ -81,9 +82,14 @@ def get_dna():
     # Checks if default input/output files should be used
     confirm_input_args()
     
-    # open the input file
-    input_data = open(in_file, 'r')
-
+    try:
+        # open the input file
+        input_data = open(in_file, 'r')
+    except:
+        if (config.QUIT_ON_NO_DATA):
+            print("Opening file failed, program exiting.")
+            sys.exit()
+        
     #read data, separate the first line from the DNA and remove all the linebreaks from the DNA string
     all_data = input_data.read()
     input_data.close()
