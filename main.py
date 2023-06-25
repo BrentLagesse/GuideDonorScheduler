@@ -78,24 +78,8 @@ for acid, strings in codons.items():
 
 def get_dna():
     
-    global in_file
-    global out_base
-    
-    # Checks if argument inputs are present, otherwise defaults to what is in config
-    
-    # Checking in_file
-    if (in_file == None):
-        print("No input file detected, using default.")
-        in_file = config.DEFAULT_IN_FILE
-        if (config.DEFAULT_IN_FILE == None):
-                print("No default input file present.")
-    
-    # Checking out_file
-    if (out_base == None):
-        print("No output file detected, using default.")
-        out_base = config.DEFAULT_OUT_FILE
-        if (config.DEFAULT_OUT_FILE == None):
-                print("No default output file present.")
+    # Checks if default input/output files should be used
+    confirm_input_args()
     
     # open the input file
     input_data = open(in_file, 'r')
@@ -407,6 +391,30 @@ def write_results(frontmatter, results):
 
     wb.save(out_base + '.xls')
 
+
+# Checks if no arguments are given, will set input and output files to the default
+# if none are present.
+# Prints warnings if doing so, or if no defaults are configured.
+def confirm_input_args():
+    
+    global in_file
+    global out_base
+    
+    # Checks if argument inputs are present, otherwise defaults to what is in config
+    
+    # Checking in_file
+    if (in_file == None):
+        print("No input file detected, using default.")
+        in_file = config.DEFAULT_IN_FILE
+        if (config.DEFAULT_IN_FILE == None):
+                print("No default input file present.")
+    
+    # Checking out_file
+    if (out_base == None):
+        print("No output file detected, using default.")
+        out_base = config.DEFAULT_OUT_FILE
+        if (config.DEFAULT_OUT_FILE == None):
+                print("No default output file present.")
 
 
 
