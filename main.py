@@ -82,6 +82,8 @@ def get_dna():
     # Checks if default input/output files should be used
     confirm_input_args()
     
+     
+    # If the input file fails to load, the program exits with an error message
     try:
         # open the input file
         input_data = open(in_file, 'r')
