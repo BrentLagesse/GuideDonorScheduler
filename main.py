@@ -412,7 +412,7 @@ def write_results(frontmatter, results, dna):
     column_pos += mutation_count
     
     sheet1.write(column_pos, 0, "Original DNA")
-    column_pos += 2
+    column_pos += 1
     sheet1.write(column_pos, 0, dna)
     column_pos += 1
     
