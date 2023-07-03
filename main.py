@@ -344,7 +344,7 @@ def invert_dna(dna):
     return inv_dna
 
 #print(invert_dna('GACCGTGCGACTGGGCGTCTCGGATCTAAGCTTTTGAATATTCCCTGTTTGAAGAGCATACGCTCTTCTTCTAACTTGATAAAATAAATATCCAGTCTGATAAATTGACAAGCTCAATTAAATCCAGAAAGCTGAAAGCTGAGGGAATATTCAAAAGCTTACTGGATACGTTGAGGCAATACGATTCGTCGATACAAAATTTAAACATCGAGACGTGTCCCTGCCTTGCG'))
-def write_results(frontmatter, results):
+def write_results(frontmatter, results, dna):
 
     global gs
 
@@ -375,9 +375,13 @@ def write_results(frontmatter, results):
     first = 'GACCGTGCGACTGGGCGTCTCGGATC'
     second = 'GTTTGAAGAGCATACGCTCTTCTTCT'
     third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+    
+    mutation_count = 0
+    
+    cur_id = (str(frontmatter).partition(' ')[0])[1:]
 
     for i,mutation in enumerate(results):
-        sheet1.write(i + column_pos, 0, i)
+        sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
         sheet1.write(i + column_pos, 1, mutation.mutation[0])
         sheet1.write(i + column_pos, 2, mutation.mutation[1])
         sheet1.write(i + column_pos, 3, mutation.mutation_loc)
@@ -401,8 +405,17 @@ def write_results(frontmatter, results):
             seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
             sheet1.write_rich_text(i + column_pos, 5, (
             seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
-        sheet1.write(i+1, 4, mutation.complement)
-
+        sheet1.write(i+column_pos, 4, mutation.complement)
+        
+        mutation_count = i + 2
+        
+    column_pos += mutation_count
+    
+    sheet1.write(column_pos, 0, "Original DNA")
+    column_pos += 2
+    sheet1.write(column_pos, 0, dna)
+    column_pos += 1
+    
     wb.save(out_base + '.xls')
 
 
@@ -478,7 +491,7 @@ for loc in inv_dna_locs:
 
 
 # at this point, we have everything we need to output the results
-write_results(frontmatter, all_mutations)
+write_results(frontmatter, all_mutations, dna)
 
 
 
