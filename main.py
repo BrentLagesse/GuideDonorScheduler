@@ -352,13 +352,18 @@ def write_results(frontmatter, results):
     print('failed due to pam: ' + str(gs.failed_due_to_pam))
     print('succeeded: ' + str(gs.succeeded))
 
+    column_pos = 0
+
     wb = Workbook()
     sheet1 = wb.add_sheet('Sheet 1')
-    sheet1.write(0, 0, 'Mutation From')
-    sheet1.write(0, 1, 'Mutation To')
-    sheet1.write(0, 2, 'Mutation Location')
-    sheet1.write(0, 3, 'Reverse Complement')
-    sheet1.write(0, 4, 'Result')
+    sheet1.write(column_pos, 0, 'ID')
+    sheet1.write(column_pos, 1, 'Mutation From')
+    sheet1.write(column_pos, 2, 'Mutation To')
+    sheet1.write(column_pos, 3, 'Mutation Location')
+    sheet1.write(column_pos, 4, 'Reverse Complement')
+    sheet1.write(column_pos, 5, 'Result')
+    
+    column_pos += 2
 
 
     extra_font = xlwt.easyfont('color_index gray50')
@@ -372,9 +377,10 @@ def write_results(frontmatter, results):
     third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
 
     for i,mutation in enumerate(results):
-        sheet1.write(i + 1, 0, mutation.mutation[0])
-        sheet1.write(i + 1, 1, mutation.mutation[1])
-        sheet1.write(i + 1, 2, mutation.mutation_loc)
+        sheet1.write(i + column_pos, 0, i)
+        sheet1.write(i + column_pos, 1, mutation.mutation[0])
+        sheet1.write(i + column_pos, 2, mutation.mutation[1])
+        sheet1.write(i + column_pos, 3, mutation.mutation_loc)
         seg_first = (mutation.dna[0:len(first)], extra_font)
         seg_guide = (mutation.dna[len(first):len(first)+20], guide_font)
         seg_second = (mutation.dna[len(first)+20:len(first)+20+len(second)], extra_font)
@@ -387,15 +393,15 @@ def write_results(frontmatter, results):
             seg_dna1 = (mutation.dna[len(first)+20+len(second):mutation.mutation_loc], dna_font)
             seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
             seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + 1, 4, (
+            sheet1.write_rich_text(i + column_pos, 5, (
             seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
         else:    #downstream mutation
             seg_dna1 = (mutation.dna[len(first) + 20 + len(second):mutation.pam], dna_font)
             seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
             seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + 1, 4, (
+            sheet1.write_rich_text(i + column_pos, 5, (
             seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
-        sheet1.write(i+1, 3, mutation.complement)
+        sheet1.write(i+1, 4, mutation.complement)
 
     wb.save(out_base + '.xls')
 
