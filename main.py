@@ -376,7 +376,7 @@ def write_results(frontmatter, results, dna):
     second = 'GTTTGAAGAGCATACGCTCTTCTTCT'
     third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
     
-    mutation_count = 0
+    mutation_count = 0 # Used for placing the original sequence after printing all mutations
     
     cur_id = (str(frontmatter).partition(' ')[0])[1:]
 
@@ -414,6 +414,15 @@ def write_results(frontmatter, results, dna):
     sheet1.write(column_pos, 0, "Original DNA")
     column_pos += 1
     sheet1.write(column_pos, 0, dna)
+    column_pos += 2
+
+    # Print results
+
+    sheet1.write(column_pos, 0, "Failed due to mutation: " + str(gs.failed_due_to_mutate))
+    column_pos += 1
+    sheet1.write(column_pos, 0, "Failed due to pam: " + str(gs.failed_due_to_pam))
+    column_pos += 1
+    sheet1.write(column_pos, 0, "Succeeded: " + str(gs.succeeded))
     column_pos += 1
     
     wb.save(out_base + '.xls')
