@@ -42,6 +42,8 @@ GENE_END_BUFFER = 1000
 UP_ACIDS = 6
 DOWN_ACIDS = 4
 
+GUIDE_LENGTH = 20
+
 # ----------------------------------------------------
 #
 #                   CODON SETUP

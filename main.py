@@ -361,7 +361,9 @@ def write_results(frontmatter, results, dna):
     sheet1.write(column_pos, 2, 'Mutation To')
     sheet1.write(column_pos, 3, 'Mutation Location')
     sheet1.write(column_pos, 4, 'Reverse Complement')
-    sheet1.write(column_pos, 5, 'Result')
+    sheet1.write(column_pos, 5, 'Mutation Distance')
+    sheet1.write(column_pos, 6, '')
+    sheet1.write(column_pos, 7, 'Result')
     
     column_pos += 2
 
@@ -385,33 +387,36 @@ def write_results(frontmatter, results, dna):
         sheet1.write(i + column_pos, 1, mutation.mutation[0])
         sheet1.write(i + column_pos, 2, mutation.mutation[1])
         sheet1.write(i + column_pos, 3, mutation.mutation_loc)
+        sheet1.write(i + column_pos, 4, mutation.complement)
+        sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
+        
+        
         seg_first = (mutation.dna[0:len(first)], extra_font)
-        seg_guide = (mutation.dna[len(first):len(first)+20], guide_font)
-        seg_second = (mutation.dna[len(first)+20:len(first)+20+len(second)], extra_font)
+        seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
+        seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
         seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
         seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
         seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
 
 
         if mutation.mutation_loc < mutation.pam:  #upstream mutation
-            seg_dna1 = (mutation.dna[len(first)+20+len(second):mutation.mutation_loc], dna_font)
+            seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
             seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
             seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + column_pos, 5, (
+            sheet1.write_rich_text(i + column_pos, 7, (
             seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
         else:    #downstream mutation
-            seg_dna1 = (mutation.dna[len(first) + 20 + len(second):mutation.pam], dna_font)
+            seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
             seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
             seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + column_pos, 5, (
+            sheet1.write_rich_text(i + column_pos, 7, (
             seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
-        sheet1.write(i+column_pos, 4, mutation.complement)
         
         mutation_count = i + 2
         
     column_pos += mutation_count
     
-    sheet1.write(column_pos, 0, "Original DNA")
+    sheet1.write(column_pos, 0, "Original Sequence")
     column_pos += 1
     sheet1.write(column_pos, 0, dna)
     column_pos += 2
