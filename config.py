@@ -24,10 +24,23 @@ mutations_to_attempt['val'] = 'ile'
 # ----------------------------------------------------
 
 
-DEFAULT_IN_FILE = "S288C_YCL032W_STE50_flanking.fsa"
-DEFAULT_OUT_FILE = "mutation_output"
+DEFAULT_IN_FILE = 'S288C_YCL032W_STE50_flanking.fsa'
+DEFAULT_OUT_FILE = 'mutation_output'
 
 QUIT_ON_NO_DATA = True
+
+MUTATION_RESULT_ID_PREFIX = 'GD'
+GUIDE_LIBRARY_ID_PREFIX = 'GL'
+
+# ----------------------------------------------------
+#
+#                   OUTPUTS
+#
+# ----------------------------------------------------
+
+PRINT_MUTATION_RESULTS = True
+PRINT_GUIDE_LIBRARY = True
+
 
 
 # ----------------------------------------------------

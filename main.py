@@ -347,92 +347,136 @@ def invert_dna(dna):
 def write_results(frontmatter, results, dna):
 
     global gs
-
-    print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
-    print('failed due to pam: ' + str(gs.failed_due_to_pam))
-    print('succeeded: ' + str(gs.succeeded))
-
-    column_pos = 0
-
     wb = Workbook()
-    sheet1 = wb.add_sheet('Sheet 1')
-    sheet1.write(column_pos, 0, 'ID')
-    sheet1.write(column_pos, 1, 'Mutation From')
-    sheet1.write(column_pos, 2, 'Mutation To')
-    sheet1.write(column_pos, 3, 'Mutation Location')
-    sheet1.write(column_pos, 4, 'Reverse Complement')
-    sheet1.write(column_pos, 5, 'Mutation Distance')
-    sheet1.write(column_pos, 6, '')
-    sheet1.write(column_pos, 7, 'Result')
     
-    column_pos += 2
+    if (config.PRINT_MUTATION_RESULTS):
 
-
-    extra_font = xlwt.easyfont('color_index gray50')
-    mutation_font = xlwt.easyfont('color_index red')
-    guide_font = xlwt.easyfont('color_index blue')
-    pam_font = xlwt.easyfont('color_index green')
-    dna_font = xlwt.easyfont('color_index black')
-
-    first = 'GACCGTGCGACTGGGCGTCTCGGATC'
-    second = 'GTTTGAAGAGCATACGCTCTTCTTCT'
-    third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+        print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
+        print('failed due to pam: ' + str(gs.failed_due_to_pam))
+        print('succeeded: ' + str(gs.succeeded))
     
-    mutation_count = 0 # Used for placing the original sequence after printing all mutations
+        column_pos = 0
     
-    cur_id = (str(frontmatter).partition(' ')[0])[1:]
-
-    for i,mutation in enumerate(results):
-        sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
-        sheet1.write(i + column_pos, 1, mutation.mutation[0])
-        sheet1.write(i + column_pos, 2, mutation.mutation[1])
-        sheet1.write(i + column_pos, 3, mutation.mutation_loc)
-        sheet1.write(i + column_pos, 4, mutation.complement)
-        sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
+        sheet1 = wb.add_sheet('Mutation Results')
+        sheet1.write(column_pos, 0, 'ID')
+        sheet1.write(column_pos, 1, 'Mutation From')
+        sheet1.write(column_pos, 2, 'Mutation To')
+        sheet1.write(column_pos, 3, 'Mutation Location')
+        sheet1.write(column_pos, 4, 'Reverse Complement')
+        sheet1.write(column_pos, 5, 'Mutation Distance')
+        sheet1.write(column_pos, 6, '')
+        sheet1.write(column_pos, 7, 'Result')
         
-        
-        seg_first = (mutation.dna[0:len(first)], extra_font)
-        seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
-        seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
-        seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
-        seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
-        seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
-
-
-        if mutation.mutation_loc < mutation.pam:  #upstream mutation
-            seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
-            seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
-            seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + column_pos, 7, (
-            seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
-        else:    #downstream mutation
-            seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
-            seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
-            seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
-            sheet1.write_rich_text(i + column_pos, 7, (
-            seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
-        
-        mutation_count = i + 2
-        
-    column_pos += mutation_count
+        column_pos += 2
     
-    sheet1.write(column_pos, 0, "Original Sequence")
-    column_pos += 1
-    sheet1.write(column_pos, 0, dna)
-    column_pos += 2
-
-    # Print results
-
-    sheet1.write(column_pos, 0, "Failed due to mutation: " + str(gs.failed_due_to_mutate))
-    column_pos += 1
-    sheet1.write(column_pos, 0, "Failed due to pam: " + str(gs.failed_due_to_pam))
-    column_pos += 1
-    sheet1.write(column_pos, 0, "Succeeded: " + str(gs.succeeded))
-    column_pos += 1
     
+        extra_font = xlwt.easyfont('color_index gray50')
+        mutation_font = xlwt.easyfont('color_index red')
+        guide_font = xlwt.easyfont('color_index blue')
+        pam_font = xlwt.easyfont('color_index green')
+        dna_font = xlwt.easyfont('color_index black')
+    
+        first = 'GACCGTGCGACTGGGCGTCTCGGATC'
+        second = 'GTTTGAAGAGCATACGCTCTTCTTCT'
+        third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+        
+        mutation_count = 0 # Used for placing the original sequence after printing all mutations
+        
+        cur_id = (str(frontmatter).partition(' ')[0])[1:]
+       
+        
+        for i,mutation in enumerate(results):
+            sheet1.write(i + column_pos, 0, cur_id + "_" + config.MUTATION_RESULT_ID_PREFIX + "_" + str(i))
+            sheet1.write(i + column_pos, 1, mutation.mutation[0])
+            sheet1.write(i + column_pos, 2, mutation.mutation[1])
+            sheet1.write(i + column_pos, 3, mutation.mutation_loc)
+            sheet1.write(i + column_pos, 4, mutation.complement)
+            sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
+            
+            
+            seg_first = (mutation.dna[0:len(first)], extra_font)
+            seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
+            seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
+            seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
+            seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
+            seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
+    
+    
+            if mutation.mutation_loc < mutation.pam:  #upstream mutation
+                seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
+                seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
+                seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
+                sheet1.write_rich_text(i + column_pos, 7, (
+                seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
+            else:    #downstream mutation
+                seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
+                seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
+                seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
+                sheet1.write_rich_text(i + column_pos, 7, (
+                seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
+            
+            mutation_count = i + 2
+            
+        column_pos += mutation_count
+        
+        sheet1.write(column_pos, 0, "Original Sequence")
+        column_pos += 1
+        sheet1.write(column_pos, 0, dna)
+        column_pos += 2
+    
+        # Print results
+    
+        sheet1.write(column_pos, 0, "Failed due to mutation: " + str(gs.failed_due_to_mutate))
+        column_pos += 1
+        sheet1.write(column_pos, 0, "Failed due to pam: " + str(gs.failed_due_to_pam))
+        column_pos += 1
+        sheet1.write(column_pos, 0, "Succeeded: " + str(gs.succeeded))
+        column_pos += 1
+    
+    if (config.PRINT_GUIDE_LIBRARY):
+
+        column_pos = 0
+    
+        sheet2 = wb.add_sheet('Guide Library')
+        sheet2.write(column_pos, 0, 'ID')
+        sheet2.write(column_pos, 1, 'GUIDE')
+        sheet2.write(column_pos, 2, 'INVERSE COMPLIMENT')
+        
+        column_pos += 2
+    
+    
+        extra_font = xlwt.easyfont('color_index gray50')
+        guide_font = xlwt.easyfont('color_index blue')
+        
+        cur_id = (str(frontmatter).partition(' ')[0])[1:]
+    
+        for i,mutation in enumerate(results):
+            sheet2.write(i + column_pos, 0, cur_id + "_" + config.GUIDE_LIBRARY_ID_PREFIX + "_" + str(i))
+            
+            guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
+            inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)   
+            prefix = 'GATC'
+            inv_prefix = 'AAAC'
+        
+            if mutation.mutation_loc < mutation.pam:  #upstream mutation
+                _prefix = (prefix, dna_font)
+                sheet2.write_rich_text(i + column_pos, 1, (
+                _prefix, guide))
+                
+                _prefix = (inv_prefix, dna_font)
+                sheet2.write_rich_text(i + column_pos, 2, (
+                _prefix, inv_guide))
+            else:    #downstream mutation
+                _prefix = (inv_prefix, dna_font)
+                sheet2.write_rich_text(i + column_pos, 1, (
+                _prefix, guide))
+                
+                _prefix = (prefix, dna_font)
+                sheet2.write_rich_text(i + column_pos, 2, (
+                _prefix, inv_guide))
+            
     wb.save(out_base + '.xls')
-
-
+    
 # Checks if no arguments are given, will set input and output files to the default
 # if none are present.
 # Prints warnings if doing so, or if no defaults are configured.
