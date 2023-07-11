@@ -108,7 +108,6 @@ def get_locations(dna):
     gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
     cc_locs = [loc.start()+config.GENE_START_BUFFER for loc in re.finditer('(?=CC)', invert_dna(gene_only[AMINO_ACID_IGNORE:]))] # Double check if this also needs a -1?
     
-    return[[],[]]
     return [gg_locs, cc_locs]
 
 # Returns the 20 base-pairs before the PAM location
