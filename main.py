@@ -100,17 +100,15 @@ def get_dna():
     dna = dna.replace('\n', '')
     return frontmatter, dna
 
+# Returns locations of NGG and NCC triples as a set of arrays : [NGGs, NCCs]
 def get_locations(dna):
     #find all of the locations of the NGG or CCN triples
     gene_only = dna[config.GENE_START_BUFFER:len(dna)-config.GENE_END_BUFFER]
-    gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
-
-    return gg_locs
-
-    #TODO:  add CC later after we get the code working on GG
-    #cc_locs = [loc.start()+GENE_START_BUFFER for loc in re.finditer('(?=CC)', gene_only)]
-
-    #return (gg_locs + cc_locs).sort()
+    AMINO_ACID_IGNORE = 1 * 3 # // NOTE CHECK IF THIS IS RIGHT // Ignores the first amino acid in the dna sequence
+    gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
+    cc_locs = [loc.start()+config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in re.finditer('(?=CC)', invert_dna(gene_only))] # NOTE // DOUBLE CHECK IF THIS WORKS
+    
+    return [gg_locs, cc_locs]
 
 # Returns the 20 base-pairs before the PAM location
 def create_guides(dna, loc):
@@ -502,10 +500,10 @@ frontmatter, dna = get_dna()
 inv_dna_full = invert_dna(dna)
 # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
 #  This function finds all the pams
-dna_locs = get_locations(dna)
 
-# get the dna locations in the complement strand
-inv_dna_locs = get_locations(inv_dna_full)
+pams = get_locations(dna) # Returns pams from both regular strand and inverse compliment
+dna_locs = pams[0]
+inv_dna_locs = pams[1]
 
 all_mutations = []
 for loc in dna_locs:
