@@ -107,7 +107,7 @@ def get_locations(dna):
     AMINO_ACID_IGNORE = 1 * 3 # // Ignores the first amino acid in the sequence
     gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
     cc_locs = [loc.start()+config.GENE_START_BUFFER for loc in re.finditer('(?=CC)', invert_dna(gene_only[AMINO_ACID_IGNORE:]))] # Double check if this also needs a -1?
-    
+        
     return [gg_locs, cc_locs]
 
 # Returns the 20 base-pairs before the PAM location
@@ -116,9 +116,9 @@ def create_guides(dna, loc):
     return dna[loc-20:loc]
 
 def insert_extra_sequence(candidate_dna, guide):
-    first = 'GACCGTGCGACTGGGCGTCTCGGATC'
-    second = 'GTTTGAAGAGCATACGCTCTTCTTCT'
-    third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+    config.first_sequence = 'GACCGTGCGACTGGGCGTCTCGGATC'
+    config.second_sequence = 'GTTTGAAGAGCATACGCTCTTCTTCT'
+    config.third_sequence = 'ACATCGAGACGTGTCCCTGCCTTGCG'
     return first + guide + second + candidate_dna + third
 
 

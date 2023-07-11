@@ -16,6 +16,9 @@ mutations_to_attempt['ala'] = 'tyr'
 mutations_to_attempt['cys'] = 'thr'
 mutations_to_attempt['val'] = 'ile'
 
+first_sequence = 'GACCGTGCGACTGGGCGTCTCGGATC'
+second_sequence = 'GTTTGAAGAGCATACGCTCTTCTTCT'
+third_sequence = 'ACATCGAGACGTGTCCCTGCCTTGCG'
 
 # ----------------------------------------------------
 #
@@ -86,3 +89,15 @@ trp = ['TGG']
 arg = ['AGA', 'CGC', 'CGA', 'CGG', 'CGT', 'AGG']
 gly = ['GGT', 'GGC', 'GGA', 'GGG']
 stop = ['TAA', 'TAG', 'TGA']
+
+
+
+
+
+# FINISHED ISSUES ( Ignore, this is for me )
+
+# Skip mutating first acid complete
+# Guide library ( Though I should add an export that could then be read back in )
+# Config ( Will likely be adding more to this as time goes on however )
+# Improved output ( Still need to confirm IDs, finish that * thing?? )
+# Reverse strand needs reverse compliment ( The fix seemed too easy, probably not right, gotta look further into it + the additional tasks in that issue )
