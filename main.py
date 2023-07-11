@@ -116,9 +116,9 @@ def create_guides(dna, loc):
     return dna[loc-20:loc]
 
 def insert_extra_sequence(candidate_dna, guide):
-    config.first_sequence = 'GACCGTGCGACTGGGCGTCTCGGATC'
-    config.second_sequence = 'GTTTGAAGAGCATACGCTCTTCTTCT'
-    config.third_sequence = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+    first = config.first_sequence
+    second = config.second_sequence
+    third = config.third_sequence
     return first + guide + second + candidate_dna + third
 
 
@@ -377,9 +377,9 @@ def write_results(frontmatter, results, dna):
         pam_font = xlwt.easyfont('color_index green')
         dna_font = xlwt.easyfont('color_index black')
     
-        first = 'GACCGTGCGACTGGGCGTCTCGGATC'
-        second = 'GTTTGAAGAGCATACGCTCTTCTTCT'
-        third = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+        first = config.first_sequence
+        second = config.second_sequence
+        third = config.third_sequence
         
         mutation_count = 0 # Used for placing the original sequence after printing all mutations
         
