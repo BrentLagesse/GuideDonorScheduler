@@ -98,7 +98,6 @@ def get_dna():
     frontmatter = all_data.partition('\n')[0]
     dna = all_data.partition('\n')[2]
     dna = dna.replace('\n', '')
-
     return frontmatter, dna
 
 def get_locations(dna):
@@ -113,10 +112,10 @@ def get_locations(dna):
 
     #return (gg_locs + cc_locs).sort()
 
+# Returns the 20 base-pairs before the PAM location
 def create_guides(dna, loc):
-    pass
-    # grab the 20 pairs before
-    #TODO: do we just need the location?
+    
+    return dna[loc-20:loc]
 
 def insert_extra_sequence(candidate_dna, guide):
     first = 'GACCGTGCGACTGGGCGTCTCGGATC'
@@ -211,7 +210,7 @@ def create_mutations(dna, pam, mutant, complement=False):
     DOWNSTREAM = config.DOWN_ACIDS * 3
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
-    guide = dna[pam-20:pam]
+    guide = create_guides(dna, pam)
 
     # introduce mutation
 
@@ -364,7 +363,7 @@ def write_results(frontmatter, results, dna):
         sheet1.write(column_pos, 3, 'Mutation Location')
         sheet1.write(column_pos, 4, 'Reverse Complement')
         sheet1.write(column_pos, 5, 'Mutation Distance')
-        sheet1.write(column_pos, 6, '')
+        sheet1.write(column_pos, 6, 'Original DNA')
         sheet1.write(column_pos, 7, 'Result')
         
         column_pos += 2
@@ -423,15 +422,6 @@ def write_results(frontmatter, results, dna):
         column_pos += 1
         sheet1.write(column_pos, 0, dna)
         column_pos += 2
-    
-        # Print results
-    
-        sheet1.write(column_pos, 0, "Failed due to mutation: " + str(gs.failed_due_to_mutate))
-        column_pos += 1
-        sheet1.write(column_pos, 0, "Failed due to pam: " + str(gs.failed_due_to_pam))
-        column_pos += 1
-        sheet1.write(column_pos, 0, "Succeeded: " + str(gs.succeeded))
-        column_pos += 1
     
     if (config.PRINT_GUIDE_LIBRARY):
 
