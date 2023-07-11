@@ -211,7 +211,11 @@ def create_mutations(dna, pam, mutant, complement=False):
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = create_guides(dna, pam)
-
+    
+    # If we are on the reverse compliment, invert the guide // NOTE this might not work yet
+    if (complement):
+        guide = invert_dna(guide)
+    
     # introduce mutation
 
     #2a a. To make the donor, take 132 base pairs surrounding the mutations (either centered around both the main mutation and the PAM mutation, or if easier could just center all the donors for a given guide around the PAM).
