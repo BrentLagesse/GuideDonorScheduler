@@ -26,7 +26,8 @@ third_sequence = 'ACATCGAGACGTGTCCCTGCCTTGCG'
 #
 # ----------------------------------------------------
 
-GUIDE_LIBRARY_FILE = 'guide_library'
+GUIDE_LIBRARY_OUTPUT_FILE = 'guide_library'
+GUIDE_LIBRARY_INPUT_FILE = 'guide_library'
 USE_GUIDE_LIBRARY = False
 
 DEFAULT_IN_FILE = 'S288C_YCL032W_STE50_flanking.fsa'

@@ -106,7 +106,7 @@ def get_dna():
     
     try:
         # open the input file
-        with open(config.GUIDE_LIBRARY_FILE+".json", "r") as file:
+        with open(config.GUIDE_LIBRARY_INPUT_FILE+".json", "r") as file:
             guide_input = json.load(file)
     except:
         if (config.QUIT_ON_NO_DATA):
@@ -506,7 +506,7 @@ def write_results(frontmatter, results, dna):
     # Formatting the output data for readability
     out_data = ["Guides", guides, "Guides inverted", inv_guides]
     
-    with open(config.GUIDE_LIBRARY_FILE+".json", "w") as file:
+    with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
         json.dump(out_data, file)
     
 # Checks if no arguments are given, will set input and output files to the default
