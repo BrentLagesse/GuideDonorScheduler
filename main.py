@@ -135,7 +135,7 @@ def create_guides(dna, loc):
 
 def is_guide_in_library(guide, guide_library):
     
-    return ('GATC'+guide) in guide_library or ('AAAC'+guide) in guide_library
+    return ('GATC'+guide) in guide_library[0] or ('AAAC'+guide) in guide_library[1]
 
 def insert_extra_sequence(candidate_dna, guide):
     first = config.first_sequence
@@ -231,6 +231,11 @@ def create_mutations(dna, pam, mutant, complement=False):
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = create_guides(dna, pam)
+    
+    if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
+        print("Rejecting guide due to not appearing in guide library")
+        return None
+    
     
     # If we are on the reverse compliment, invert the guide // NOTE this might not work yet
     if (complement):
