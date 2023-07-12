@@ -99,6 +99,8 @@ def get_dna():
     frontmatter = all_data.partition('\n')[0]
     dna = all_data.partition('\n')[2]
     dna = dna.replace('\n', '')
+    
+    # PROCESS EXITS IF GUIDE LIBRARY IS NOT IN USE
     if (config.USE_GUIDE_LIBRARY != True):
         return frontmatter, dna, None
     
@@ -457,7 +459,10 @@ def write_results(frontmatter, results, dna):
         guide_font = xlwt.easyfont('color_index blue')
         
         cur_id = (str(frontmatter).partition(' ')[0])[1:]
-    
+        
+        guides = []
+        inv_guides = []
+        
         for i,mutation in enumerate(results):
             sheet2.write(i + column_pos, 0, cur_id + "_" + config.GUIDE_LIBRARY_ID_PREFIX + "_" + str(i))
             
@@ -470,20 +475,30 @@ def write_results(frontmatter, results, dna):
                 _prefix = (prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 1, (
                 _prefix, guide))
+                guides.append(guide[0])
                 
                 _prefix = (inv_prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 2, (
                 _prefix, inv_guide))
+                inv_guides.append(inv_guide[0])
             else:    #downstream mutation
                 _prefix = (inv_prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 1, (
                 _prefix, guide))
+                guides.append(guide[0])
                 
                 _prefix = (prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 2, (
                 _prefix, inv_guide))
+                inv_guides.append(inv_guide[0])
+            
             
     wb.save(out_base + '.xls')
+    # Formatting the output data for readability
+    out_data = ["Guides", guides, "Guides inverted", inv_guides]
+    
+    with open(config.GUIDE_LIBRARY_FILE+".json", "w") as file:
+        json.dump(out_data, file)
     
 # Checks if no arguments are given, will set input and output files to the default
 # if none are present.
@@ -512,7 +527,7 @@ def confirm_input_args():
 
 
 # 1)  Choose the gene to mutate
-frontmatter, dna = get_dna()
+frontmatter, dna, guide_lib = get_dna()
 inv_dna_full = invert_dna(dna)
 # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
 #  This function finds all the pams
