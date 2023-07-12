@@ -135,8 +135,7 @@ def create_guides(dna, loc):
 
 def is_guide_in_library(guide, guide_library):
     
-    pass
-    # TODO, checks if the guide is on the list. Thisll be used with the guide library to only use predetermined guides
+    return ('GATC'+guide) in guide_library or ('AAAC'+guide) in guide_library
 
 def insert_extra_sequence(candidate_dna, guide):
     first = config.first_sequence
@@ -480,22 +479,22 @@ def write_results(frontmatter, results, dna):
                 _prefix = (prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 1, (
                 _prefix, guide))
-                guides.append(guide[0])
+                guides.append(_prefix[0]+guide[0])
                 
                 _prefix = (inv_prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 2, (
                 _prefix, inv_guide))
-                inv_guides.append(inv_guide[0])
+                inv_guides.append(_prefix[0]+inv_guide[0])
             else:    #downstream mutation
                 _prefix = (inv_prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 1, (
                 _prefix, guide))
-                guides.append(guide[0])
+                inv_guides.append(_prefix[0]+guide[0])
                 
                 _prefix = (prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 2, (
                 _prefix, inv_guide))
-                inv_guides.append(inv_guide[0])
+                guides.append(_prefix[0]+inv_guide[0])
             
             
     wb.save(out_base + '.xls')
