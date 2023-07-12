@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import xlwt
 from xlwt import Workbook
 import sys
+import json
 
 # Other config module
 import config
@@ -98,7 +99,17 @@ def get_dna():
     frontmatter = all_data.partition('\n')[0]
     dna = all_data.partition('\n')[2]
     dna = dna.replace('\n', '')
-    return frontmatter, dna
+    if (config.USE_GUIDE_LIBRARY != True):
+        return frontmatter, dna, None
+    
+    try:
+        # open the input file
+        guide_input = open(in_file, 'r')
+    except:
+        if (config.QUIT_ON_NO_DATA):
+            print("Opening file failed, program exiting.")
+            sys.exit()
+    
 
 # Returns locations of NGG and NCC triples as a set of arrays : [NGGs, NCCs]
 def get_locations(dna):
@@ -114,6 +125,11 @@ def get_locations(dna):
 def create_guides(dna, loc):
     
     return dna[loc-20:loc]
+
+def is_guide_in_library(guide, guide_library):
+    
+    pass
+    # TODO, checks if the guide is on the list. Thisll be used with the guide library to only use predetermined guides
 
 def insert_extra_sequence(candidate_dna, guide):
     first = config.first_sequence
