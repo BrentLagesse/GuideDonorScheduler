@@ -90,7 +90,7 @@ def get_dna():
         input_data = open(in_file, 'r')
     except:
         if (config.QUIT_ON_NO_DATA):
-            print("Opening file failed, program exiting.")
+            print("Opening DNA file failed, program exiting.")
             sys.exit()
         
     #read data, separate the first line from the DNA and remove all the linebreaks from the DNA string
@@ -106,12 +106,17 @@ def get_dna():
     
     try:
         # open the input file
-        guide_input = open(in_file, 'r')
+        with open(config.GUIDE_LIBRARY_FILE+".json", "r") as file:
+            guide_input = json.load(file)
     except:
         if (config.QUIT_ON_NO_DATA):
-            print("Opening file failed, program exiting.")
+            print("Opening GUIDE file failed, program exiting.")
             sys.exit()
     
+    # Removes tags added for readability
+    guide_data = [guide_input[1],guide_input[3]]
+    
+    return frontmatter, dna, guide_data
 
 # Returns locations of NGG and NCC triples as a set of arrays : [NGGs, NCCs]
 def get_locations(dna):
