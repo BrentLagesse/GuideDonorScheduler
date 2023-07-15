@@ -45,17 +45,14 @@ GUIDE_LIBRARY_ID_PREFIX = 'GL'
 #
 # ----------------------------------------------------
 
-PRINT_MUTATION_RESULTS = False
+PRINT_MUTATION_RESULTS = True
 PRINT_GUIDE_LIBRARY = False
-
-
 
 # ----------------------------------------------------
 #
 #                   PARAMETER CONFIG
 #
 # ----------------------------------------------------
-
 
 GENE_START_BUFFER = 1000
 GENE_END_BUFFER = 1000
@@ -69,7 +66,6 @@ GUIDE_LENGTH = 20
 #                   CODON SETUP
 #
 # ----------------------------------------------------
-
 
 # The one we prefer most is placed at the front of the list
 leu = ['TTG', 'TTA', 'CTT', 'CTC', 'CTA', 'CTG']
@@ -93,8 +89,6 @@ trp = ['TGG']
 arg = ['AGA', 'CGC', 'CGA', 'CGG', 'CGT', 'AGG']
 gly = ['GGT', 'GGC', 'GGA', 'GGG']
 stop = ['TAA', 'TAG', 'TGA']
-
-
 
 # ----------------------------------------------------
 #

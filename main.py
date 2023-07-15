@@ -23,9 +23,10 @@ class MutationTracker:
 class GlobalStats:
     failed_due_to_mutate: int
     failed_due_to_pam: int
+    failed_due_to_guide_library: int
     succeeded: int
 
-gs = GlobalStats(0,0,0)
+gs = GlobalStats(0,0,0,0)
 
 # set up the argument parser so we can accept commandline arguments
 argParser = argparse.ArgumentParser()
@@ -237,7 +238,8 @@ def create_mutations(dna, pam, mutant, complement=False):
     
     if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
         if config.VERBOSE_EXECUTION:
-            print("Rejecting guide due to not appearing in guide library")
+            print("Failed to find guide within guide library")
+        gs.failed_due_to_guide_library += 1
         return None
     
     
@@ -389,6 +391,8 @@ def write_results(frontmatter, results, dna):
         if config.PRINT_MUTATION_SUCCESS_COUNTS:
             print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
             print('failed due to pam: ' + str(gs.failed_due_to_pam))
+            if (config.USE_GUIDE_LIBRARY):
+                print('failed due to guide library: ' + str(gs.failed_due_to_guide_library))
             print('succeeded: ' + str(gs.succeeded))
     
         column_pos = 0

@@ -29,13 +29,17 @@ def test_finding_pams():
         if (not p[:-1] == "CC"):
             success = False
     if (config.VERBOSE_TESTING):
+        print("PAMs identified:")
         print(pams)
     if (success):
         if (config.VERBOSE_TESTING):
             print("Pam Locator passed testing")
     else:
         print("Pam Locator failed testing")
-    
+
+def test_guide_library():
+    pass
+
 # Execute all unit tests
     
 def run_unit_tests():
