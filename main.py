@@ -6,9 +6,8 @@ from xlwt import Workbook
 import sys
 import json
 
-# Other config module
+# Other modules
 import config
-
 
 
 @dataclass
@@ -121,8 +120,8 @@ def get_dna():
 # Returns locations of NGG and NCC triples as a set of arrays : [NGGs, NCCs]
 def get_locations(dna):
     #find all of the locations of the NGG or CCN triples
-    gene_only = dna[config.GENE_START_BUFFER:len(dna)-config.GENE_END_BUFFER]
     AMINO_ACID_IGNORE = 1 * 3 # // Ignores the first amino acid in the sequence
+    gene_only = dna[config.GENE_START_BUFFER+AMINO_ACID_IGNORE:len(dna)-config.GENE_END_BUFFER]
     gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
     cc_locs = [loc.start()+config.GENE_START_BUFFER for loc in re.finditer('(?=CC)', invert_dna(gene_only[AMINO_ACID_IGNORE:]))] # Double check if this also needs a -1?
         
@@ -148,7 +147,8 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
     # if first_amino_acid_loc > 76, we are replacing downstream
     if first_amino_acid_loc == mutation_location:   # we would be replacing the mutation
         if distance_from_pam <= 5:    #don't mutate
-            print ('we did not mutate the pam because the mutation was withing 5 base pairs of pam')
+            if config.VERBOSE_EXECUTION:
+                print ('we did not mutate the pam because the mutation was withing 5 base pairs of pam')
             return True, candidate_dna
         return False, None
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc+3]
@@ -156,10 +156,12 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
         amino_acid = string_to_acid[amino_acid_str]
     else:
         if amino_acid_str in config.stop:
-            print('Ran into a stop codon: ' + amino_acid_str)
+            if config.VERBOSE_EXECUTION:
+                print('Ran into a stop codon: ' + amino_acid_str)
             return False, None
         else:
-            print('Somehow we ran into something that was not an amino acid: ' + amino_acid_str)
+            if config.VERBOSE_EXECUTION:
+                print('Somehow we ran into something that was not an amino acid: ' + amino_acid_str)
             return False, None
 
 
@@ -209,7 +211,8 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
                 return True, candidate_dna
         if not replaceable:
             if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
-                print('Could not find a replacement in the seed')
+                if config.VERBOSE_EXECUTION:
+                    print('Could not find a replacement in the seed')
                 return False, None
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
@@ -233,7 +236,8 @@ def create_mutations(dna, pam, mutant, complement=False):
     guide = create_guides(dna, pam)
     
     if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
-        print("Rejecting guide due to not appearing in guide library")
+        if config.VERBOSE_EXECUTION:
+            print("Rejecting guide due to not appearing in guide library")
         return None
     
     
@@ -286,7 +290,8 @@ def create_mutations(dna, pam, mutant, complement=False):
 
 
     if not mutation_successful:
-        print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
+        if config.VERBOSE_EXECUTION:
+            print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
         gs.failed_due_to_mutate += 1
         return None
 
@@ -307,7 +312,8 @@ def create_mutations(dna, pam, mutant, complement=False):
             pam_mutant=[pam_acid, pam_acid]
             mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant, mutation_location=mutation_location)
             if not mutation_successful:
-                print('Failed to find a valid replacement for the pam')
+                if config.VERBOSE_EXECUTION:
+                    print('Failed to find a valid replacement for the pam')
                 gs.failed_due_to_pam += 1
                 return None
         else:
@@ -356,7 +362,8 @@ def create_mutations(dna, pam, mutant, complement=False):
         gs.succeeded += 1
         return result
     else:
-        print('Mutation failed due to pam')   #TODO:  output why
+        if config.VERBOSE_EXECUTION:
+            print('Mutation failed due to pam')   #TODO:  output why
         gs.failed_due_to_pam += 1
         return None
 
@@ -379,9 +386,10 @@ def write_results(frontmatter, results, dna):
     
     if (config.PRINT_MUTATION_RESULTS):
 
-        print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
-        print('failed due to pam: ' + str(gs.failed_due_to_pam))
-        print('succeeded: ' + str(gs.succeeded))
+        if config.PRINT_MUTATION_SUCCESS_COUNTS:
+            print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
+            print('failed due to pam: ' + str(gs.failed_due_to_pam))
+            print('succeeded: ' + str(gs.succeeded))
     
         column_pos = 0
     
@@ -392,7 +400,7 @@ def write_results(frontmatter, results, dna):
         sheet1.write(column_pos, 3, 'Mutation Location')
         sheet1.write(column_pos, 4, 'Reverse Complement')
         sheet1.write(column_pos, 5, 'Mutation Distance')
-        sheet1.write(column_pos, 6, 'Original DNA')
+        sheet1.write(column_pos, 6, 'Original PAM')
         sheet1.write(column_pos, 7, 'Result')
         
         column_pos += 2
@@ -420,6 +428,7 @@ def write_results(frontmatter, results, dna):
             sheet1.write(i + column_pos, 3, mutation.mutation_loc)
             sheet1.write(i + column_pos, 4, mutation.complement)
             sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
+            sheet1.write(i + column_pos, 6, "")
             
             
             seg_first = (mutation.dna[0:len(first)], extra_font)
@@ -500,14 +509,16 @@ def write_results(frontmatter, results, dna):
                 sheet2.write_rich_text(i + column_pos, 2, (
                 _prefix, inv_guide))
                 guides.append(_prefix[0]+inv_guide[0])
+        
+        
+        # Formatting the output data for readability
+        out_data = ["Guides", guides, "Guides inverted", inv_guides]
+        with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
+            json.dump(out_data, file)
             
-            
-    wb.save(out_base + '.xls')
-    # Formatting the output data for readability
-    out_data = ["Guides", guides, "Guides inverted", inv_guides]
     
-    with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
-        json.dump(out_data, file)
+    if (config.PRINT_GUIDE_LIBRARY) or (config.PRINT_MUTATION_RESULTS):
+        wb.save(out_base + '.xls')
     
 # Checks if no arguments are given, will set input and output files to the default
 # if none are present.
@@ -582,6 +593,5 @@ for loc in inv_dna_locs:
 
 # at this point, we have everything we need to output the results
 write_results(frontmatter, all_mutations, dna)
-
 
 

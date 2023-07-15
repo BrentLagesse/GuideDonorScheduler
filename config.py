@@ -38,14 +38,15 @@ QUIT_ON_NO_DATA = True
 MUTATION_RESULT_ID_PREFIX = 'GD'
 GUIDE_LIBRARY_ID_PREFIX = 'GL'
 
+
 # ----------------------------------------------------
 #
 #                   OUTPUTS
 #
 # ----------------------------------------------------
 
-PRINT_MUTATION_RESULTS = True
-PRINT_GUIDE_LIBRARY = True
+PRINT_MUTATION_RESULTS = False
+PRINT_GUIDE_LIBRARY = False
 
 
 
@@ -95,7 +96,16 @@ stop = ['TAA', 'TAG', 'TGA']
 
 
 
+# ----------------------------------------------------
+#
+#                   DEBUG AND TESTING
+#
+# ----------------------------------------------------
 
+RUN_UNIT_TESTS = True
+VERBOSE_TESTING = True # Prints progress of unit testing
+VERBOSE_EXECUTION = False # Prints progress of main program
+PRINT_MUTATION_SUCCESS_COUNTS = False # Print success vs failed mutations after execution
 
 # FINISHED ISSUES ( Ignore, this is for me )
 
