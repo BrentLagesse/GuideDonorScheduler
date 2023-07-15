@@ -39,12 +39,50 @@ def test_finding_pams():
 
 def test_guide_library():
     pass
+    # Run the program, generate and save a guide library, compare this to confirm validity
+    # Next, reload the library back in, remove some entries, and apply it back to the program
+    # Ensure only the entries in the library are used and that non entries are discarded
 
+
+def test_mutation_identification():
+    
+    # Values to check correctness
+    
+    locs_to_find = 0 # Number of pams that *should* be returned
+    mutations_to_find = 0;
+    
+    # Test
+    
+    print("------------------------------ !! WARNING !! ------------------------------")
+    print("Mutation locator is not yet configured, values are needed to make this work")
+    
+    if (config.VERBOSE_TESTING):
+        print("Testing mutation Locator")
+    
+    frontmatter, dna, guide_lib = main.get_dna();
+    inv_dna = main.invert_dna(dna)
+    locs = np.array(main.get_locations(dna));
+    mutations = main.get_all_mutations(locs[0], locs[1], dna, inv_dna)
+    
+    # Verification
+
+    if (config.VERBOSE_TESTING):
+        print("Checking loc count : " + str(len(locs)) + " of " + str(locs_to_find))
+        print("Checking mutation count : " + str(len(mutations)) + " of " + str(mutations_to_find))
+
+    if (len(locs) == locs_to_find and len(mutations) == mutations_to_find):
+        if (config.VERBOSE_TESTING):
+            print("Mutation Locator passed testing")
+    else:
+        print("Mutation Locator failed testing")
+        
+    
 # Execute all unit tests
     
 def run_unit_tests():
     test_finding_pams()
-    
+    test_guide_library()
+    test_mutation_identification()
 
 if (config.RUN_UNIT_TESTS):
     run_unit_tests()

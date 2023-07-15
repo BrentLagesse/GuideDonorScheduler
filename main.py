@@ -548,54 +548,63 @@ def confirm_input_args():
         if (config.DEFAULT_OUT_FILE == None):
                 print("No default output file present.")
 
+def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
+    
+    mutations_output = []
+    
+    for loc in _dna_locs:
+        # I don't think we need to actually find the guides here since it is just pam - 20
+        #guides = create_guides(dna, loc)
+        #for g in guides:   # for each guide do each mutation
+    
+        for m in config.mutations_to_attempt.items():
+            mutated_dna = create_mutations(_dna, loc, m)
+            if mutated_dna is not None:
+                mutations_output.append(mutated_dna)
+    
+    
+    #class MutationTracker:
+    #    guide: int
+    #    pam: int
+    #    mutation: []
+    #    mutation_loc: int
+    #    dna: str
+    
+    for loc in _inv_dna_locs:
+        for m in config.mutations_to_attempt.items():
+            mutated_dna = create_mutations(_inv_dna, loc, m, complement=True)  #returns a mutation tracker
+            if mutated_dna is not None:
+                #revert to original  -- Maybe we don't need to do this?
+                #inv_guide = mutated_dna.guide
+                #inv_pam = len(mutated_dna.dna) - mutated_dna.pam
+                #inv_mutation = []
+                #inv_mutation_loc = len(mutated_dna.dna) - mutated_dna.mutation_loc
+                #inv_dna = invert_dna(mutated_dna.dna)
+                #inv_mutated_dna = MutationTracker(inv_guide, inv_pam, mutated_dna.mutation, inv_mutation_loc, inv_dna)
+                #all_mutations.append(inv_mutated_dna)
+    
+                mutations_output.append(mutated_dna)
+                
+    return mutations_output
+
+# Quickly moved the execution to its own function, for later use with a seperate driver (potentially, easy enough to revert if not)
+
+def execute_program():
+
+    # 1)  Choose the gene to mutate
+    frontmatter, dna, guide_lib = get_dna()
+    inv_dna_full = invert_dna(dna)
+    # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
+    #  This function finds all the pams
+    
+    pams = get_locations(dna) # Returns pams from both regular strand and inverse compliment
+    dna_locs = pams[0]
+    inv_dna_locs = pams[1]
+    
+    all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
+    
+    # at this point, we have everything we need to output the results
+    write_results(frontmatter, all_mutations, dna)
 
 
-# 1)  Choose the gene to mutate
-frontmatter, dna, guide_lib = get_dna()
-inv_dna_full = invert_dna(dna)
-# 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
-#  This function finds all the pams
-
-pams = get_locations(dna) # Returns pams from both regular strand and inverse compliment
-dna_locs = pams[0]
-inv_dna_locs = pams[1]
-
-all_mutations = []
-for loc in dna_locs:
-    # I don't think we need to actually find the guides here since it is just pam - 20
-    #guides = create_guides(dna, loc)
-    #for g in guides:   # for each guide do each mutation
-
-    for m in config.mutations_to_attempt.items():
-        mutated_dna = create_mutations(dna, loc, m)
-        if mutated_dna is not None:
-            all_mutations.append(mutated_dna)
-
-
-#class MutationTracker:
-#    guide: int
-#    pam: int
-#    mutation: []
-#    mutation_loc: int
-#    dna: str
-
-for loc in inv_dna_locs:
-    for m in config.mutations_to_attempt.items():
-        mutated_dna = create_mutations(inv_dna_full, loc, m, complement=True)  #returns a mutation tracker
-        if mutated_dna is not None:
-            #revert to original  -- Maybe we don't need to do this?
-            #inv_guide = mutated_dna.guide
-            #inv_pam = len(mutated_dna.dna) - mutated_dna.pam
-            #inv_mutation = []
-            #inv_mutation_loc = len(mutated_dna.dna) - mutated_dna.mutation_loc
-            #inv_dna = invert_dna(mutated_dna.dna)
-            #inv_mutated_dna = MutationTracker(inv_guide, inv_pam, mutated_dna.mutation, inv_mutation_loc, inv_dna)
-            #all_mutations.append(inv_mutated_dna)
-
-            all_mutations.append(mutated_dna)
-
-
-# at this point, we have everything we need to output the results
-write_results(frontmatter, all_mutations, dna)
-
-
+execute_program()
