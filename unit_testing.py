@@ -42,6 +42,8 @@ def test_guide_library():
     # Run the program, generate and save a guide library, compare this to confirm validity
     # Next, reload the library back in, remove some entries, and apply it back to the program
     # Ensure only the entries in the library are used and that non entries are discarded
+    
+    # As soon as I figure out how at least lamo
 
 
 def test_mutation_identification():
@@ -76,7 +78,17 @@ def test_mutation_identification():
     else:
         print("Mutation Locator failed testing")
         
+def test_mutation_results():
+    pass
+
+    # In this case, were gonna pass in a predefined gene so that we can directly compare the outputs
+    # and verify the program outputs.
     
+    # I think all this should be good*? :
+        
+        
+
+
 # Execute all unit tests
     
 def run_unit_tests():
