@@ -135,7 +135,7 @@ def create_guides(dna, loc):
 
 def is_guide_in_library(guide, guide_library):
     
-    return ('GATC'+guide) in guide_library[0] or ('AAAC'+guide) in guide_library[1]
+    return (config.GUIDE_LIBRARY_STRAND_PREFIX+guide) in guide_library[0] or (config.GUIDE_LIBRARY_INVERSE_PREFIX+guide) in guide_library[1]
 
 def insert_extra_sequence(candidate_dna, guide):
     first = config.first_sequence
@@ -489,9 +489,10 @@ def write_results(frontmatter, results, dna):
             sheet2.write(i + column_pos, 0, cur_id + "_" + config.GUIDE_LIBRARY_ID_PREFIX + "_" + str(i))
             
             guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
-            inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)   
-            prefix = 'GATC'
-            inv_prefix = 'AAAC'
+            inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)  
+         
+            prefix = config.GUIDE_LIBRARY_STRAND_PREFIX
+            inv_prefix = config.GUIDE_LIBRARY_INVERSE_PREFIX
         
             if mutation.mutation_loc < mutation.pam:  #upstream mutation
                 _prefix = (prefix, dna_font)

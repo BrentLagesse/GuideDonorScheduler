@@ -16,10 +16,6 @@ mutations_to_attempt['ala'] = 'tyr'
 mutations_to_attempt['cys'] = 'thr'
 mutations_to_attempt['val'] = 'ile'
 
-first_sequence = 'GACCGTGCGACTGGGCGTCTCGGATC'
-second_sequence = 'GTTTGAAGAGCATACGCTCTTCTTCT'
-third_sequence = 'ACATCGAGACGTGTCCCTGCCTTGCG'
-
 # ----------------------------------------------------
 #
 #                   FILE SETUP
@@ -46,7 +42,7 @@ GUIDE_LIBRARY_ID_PREFIX = 'GL'
 # ----------------------------------------------------
 
 PRINT_MUTATION_RESULTS = True
-PRINT_GUIDE_LIBRARY = False
+PRINT_GUIDE_LIBRARY = True
 
 # ----------------------------------------------------
 #
@@ -60,6 +56,19 @@ UP_ACIDS = 6
 DOWN_ACIDS = 4
 
 GUIDE_LENGTH = 20
+
+# ----------------------------------------------------
+#
+#                   DNA SETUP
+#
+# ----------------------------------------------------
+
+first_sequence = 'GACCGTGCGACTGGGCGTCTCGGATC'
+second_sequence = 'GTTTGAAGAGCATACGCTCTTCTTCT'
+third_sequence = 'ACATCGAGACGTGTCCCTGCCTTGCG'
+
+GUIDE_LIBRARY_STRAND_PREFIX = 'GATC'
+GUIDE_LIBRARY_INVERSE_PREFIX = 'AAAC'
 
 # ----------------------------------------------------
 #
@@ -100,11 +109,3 @@ RUN_UNIT_TESTS = True
 VERBOSE_TESTING = True # Prints progress of unit testing
 VERBOSE_EXECUTION = False # Prints progress of main program
 PRINT_MUTATION_SUCCESS_COUNTS = False # Print success vs failed mutations after execution
-
-# FINISHED ISSUES ( Ignore, this is for me )
-
-# Skip mutating first acid complete
-# Guide library ( Though I should add an export that could then be read back in )
-# Config ( Will likely be adding more to this as time goes on however )
-# Improved output ( Still need to confirm IDs, finish that * thing?? )
-# Reverse strand needs reverse compliment ( The fix seemed too easy, probably not right, gotta look further into it + the additional tasks in that issue )
