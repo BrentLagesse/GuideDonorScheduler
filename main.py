@@ -426,7 +426,7 @@ def write_results(frontmatter, results, dna):
        
         
         for i,mutation in enumerate(results):
-            sheet1.write(i + column_pos, 0, cur_id + "_" + config.MUTATION_RESULT_ID_PREFIX + "_" + str(i))
+            sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
             sheet1.write(i + column_pos, 1, mutation.mutation[0])
             sheet1.write(i + column_pos, 2, mutation.mutation[1])
             sheet1.write(i + column_pos, 3, mutation.mutation_loc)
@@ -486,7 +486,7 @@ def write_results(frontmatter, results, dna):
         inv_guides = []
         
         for i,mutation in enumerate(results):
-            sheet2.write(i + column_pos, 0, cur_id + "_" + config.GUIDE_LIBRARY_ID_PREFIX + "_" + str(i))
+            sheet2.write(i + column_pos, 0, cur_id + "_" + str(i))
             
             guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
             inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)  

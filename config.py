@@ -31,9 +31,6 @@ DEFAULT_OUT_FILE = 'mutation_output'
 
 QUIT_ON_NO_DATA = True
 
-MUTATION_RESULT_ID_PREFIX = 'GD'
-GUIDE_LIBRARY_ID_PREFIX = 'GL'
-
 
 # ----------------------------------------------------
 #
