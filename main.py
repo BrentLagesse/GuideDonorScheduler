@@ -133,10 +133,12 @@ def create_guides(dna, loc):
     
     return dna[loc-20:loc]
 
+# Returns if the given guide is held within the guide library
 def is_guide_in_library(guide, guide_library):
     
     return (config.GUIDE_LIBRARY_STRAND_PREFIX+guide) in guide_library[0] or (config.GUIDE_LIBRARY_INVERSE_PREFIX+guide) in guide_library[1]
 
+# Combines the candidate dna with the guide, as well as the extra sequences defined within config
 def insert_extra_sequence(candidate_dna, guide):
     first = config.first_sequence
     second = config.second_sequence
@@ -164,8 +166,6 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             if config.VERBOSE_EXECUTION:
                 print('Somehow we ran into something that was not an amino acid: ' + amino_acid_str)
             return False, None
-
-
     if mutant[0] == amino_acid or mutant[0] == '*':  # we found our target, lets make the swap!
         if mutant[0] == '*' and mutant[1] == '*':
             valid_mutations = codons[amino_acid]   # choose a silent mutation for whatever we are looking at
@@ -185,7 +185,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
                     replaceable = False
 
                 #TODO: don't overwrite the original mutation
-
+            
                 # we couldn't replace it, so lets try option #2, the seed (10 bases upstream)
 
 
@@ -201,7 +201,6 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
      #   a. If it is still possible to make a silent PAM mutation then that would be good (Although we are currently testing this and this parameter might change).
       #  b. If there is no way to make a silent PAM mutation and the mutation is more than 5 bases away from the PAM then the next best thing would be to make a silent mutation within the 5 bases upstream of the PAM.
        # c. If the mutation is within 5 bases from the PAM and you can’t make a silent PAM mutation, then I wouldn’t make any additional mutation.
-
 
                 # This is from when I thought we couldn't introduce a new GG
 
@@ -219,8 +218,10 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             mutant[1] = '*'
             return perform_mutation(candidate_dna, first_amino_acid_loc - 3, 3, mutant,
                                     distance_from_pam=distance_from_pam + 3)
+    
+    if config.VERBOSE_EXECUTION:
+        print('Mutant was not desireable')
     return False, None
-
 
 
 
@@ -229,6 +230,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
 def create_mutations(dna, pam, mutant, complement=False):
     global gs
+    global guide_lib
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
     UPSTREAM = config.UP_ACIDS * 3
     DOWNSTREAM = config.DOWN_ACIDS * 3
@@ -236,6 +238,7 @@ def create_mutations(dna, pam, mutant, complement=False):
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = create_guides(dna, pam)
     
+    # If using the guide library, automatically reject any guide not present in the library
     if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
         if config.VERBOSE_EXECUTION:
             print("Failed to find guide within guide library")
@@ -264,12 +267,17 @@ def create_mutations(dna, pam, mutant, complement=False):
     while first_amino_acid_loc < config.GENE_START_BUFFER:   #ignore acids outside the gene
         first_amino_acid_loc += 3
     if first_amino_acid_loc > pam:   # if we can't get anything upstream, just start at the beginning of the gene
-        first_amino_acid_loc = config.GENE_START_BUFFER
+        first_amino_acid_loc = config.GENE_START_BUFFER + 3 # Adding 3 to ignore the start codon
 
     #candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
-
     mutation_successful = False
     mutation_location = -1
+    print("Checking " + str(candidate_dna) + " for " + str(mutant[0]) + ".")
+    print(codons[mutant[0]])
+    # // NOTE // 
+    # https://cdn.discordapp.com/attachments/275221682808029184/1132258135306948752/image.png
+    # Screenshot, I believe this may have to do with the error- the desired acid is present in the candidate dna, but is not selected for mutation. I could be misreading/understanding/representing
+    # the data however, so further investigation is needed.
     if first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
         for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
             if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
@@ -278,7 +286,6 @@ def create_mutations(dna, pam, mutant, complement=False):
             candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
-
             if mutation_successful:
                 candidate_dna = temp_candidate_dna
                 mutation_location = candidate_first_amino_acid_loc
@@ -499,7 +506,7 @@ def write_results(frontmatter, results, dna):
                 sheet2.write_rich_text(i + column_pos, 1, (
                 _prefix, guide))
                 guides.append(_prefix[0]+guide[0])
-                
+                    
                 _prefix = (inv_prefix, dna_font)
                 sheet2.write_rich_text(i + column_pos, 2, (
                 _prefix, inv_guide))
