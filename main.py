@@ -155,6 +155,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             return True, candidate_dna
         return False, None
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc+3]
+    print(amino_acid_str)
     if amino_acid_str in string_to_acid:   # if this is something that isn't an amino acid, just quit
         amino_acid = string_to_acid[amino_acid_str]
     else:
@@ -166,6 +167,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             if config.VERBOSE_EXECUTION:
                 print('Somehow we ran into something that was not an amino acid: ' + amino_acid_str)
             return False, None
+    print("Currently checking " + str(amino_acid) + " for " + str(mutant[0]) + ".")
     if mutant[0] == amino_acid or mutant[0] == '*':  # we found our target, lets make the swap!
         if mutant[0] == '*' and mutant[1] == '*':
             valid_mutations = codons[amino_acid]   # choose a silent mutation for whatever we are looking at
@@ -267,8 +269,10 @@ def create_mutations(dna, pam, mutant, complement=False):
     while first_amino_acid_loc < config.GENE_START_BUFFER:   #ignore acids outside the gene
         first_amino_acid_loc += 3
     if first_amino_acid_loc > pam:   # if we can't get anything upstream, just start at the beginning of the gene
-        first_amino_acid_loc = config.GENE_START_BUFFER + 3 # Adding 3 to ignore the start codon
+        first_amino_acid_loc = config.GENE_START_BUFFER
 
+    first_amino_acid_loc += 3 # Adding 3 to ignore the start codon
+    
     #candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
     mutation_successful = False
     mutation_location = -1
@@ -279,6 +283,21 @@ def create_mutations(dna, pam, mutant, complement=False):
     # Screenshot, I believe this may have to do with the error- the desired acid is present in the candidate dna, but is not selected for mutation. I could be misreading/understanding/representing
     # the data however, so further investigation is needed.
     if first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
+        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
+            if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
+                continue
+            #convert first_amino_acid_loc from global dna to candidate dna
+            candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+            #candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+            # 2)  Actually perform the mutation
+            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
+            if mutation_successful:
+                candidate_dna = temp_candidate_dna
+                mutation_location = candidate_first_amino_acid_loc
+                break
+    
+    # Original, untouched code
+    if False and first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
         for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
             if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
                 continue

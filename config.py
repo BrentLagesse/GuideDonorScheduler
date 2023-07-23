@@ -105,4 +105,4 @@ stop = ['TAA', 'TAG', 'TGA']
 RUN_UNIT_TESTS = True
 VERBOSE_TESTING = True # Prints progress of unit testing
 VERBOSE_EXECUTION = True # Prints progress of main program
-PRINT_MUTATION_SUCCESS_COUNTS = False # Print success vs failed mutations after execution
+PRINT_MUTATION_SUCCESS_COUNTS = True # Print success vs failed mutations after execution
