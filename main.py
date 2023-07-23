@@ -287,8 +287,8 @@ def create_mutations(dna, pam, mutant, complement=False):
             if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
                 continue
             #convert first_amino_acid_loc from global dna to candidate dna
-            candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
-            #candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+            #candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+            candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if mutation_successful:
