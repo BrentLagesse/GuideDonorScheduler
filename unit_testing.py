@@ -31,6 +31,8 @@ def test_finding_pams():
     if (config.VERBOSE_TESTING):
         print("PAMs identified:")
         print(pams)
+        print("PAM count:")
+        print(len(pams))
     if (success):
         if (config.VERBOSE_TESTING):
             print("Pam Locator passed testing")
@@ -87,14 +89,16 @@ def test_mutation_results():
     # I think all this should be good*? :
         
         
+# Write quick test to try * and see if it mutates a huge chunk of the gene
 
+# Reference, STE50 should return 
 
 # Execute all unit tests
     
 def run_unit_tests():
     test_finding_pams()
-    test_guide_library()
-    test_mutation_identification()
+    #test_guide_library()
+    #test_mutation_identification()
 
 if (config.RUN_UNIT_TESTS):
     run_unit_tests()

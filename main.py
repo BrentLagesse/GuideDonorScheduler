@@ -124,8 +124,9 @@ def get_locations(dna):
     AMINO_ACID_IGNORE = 1 * 3 # // Ignores the first amino acid in the sequence
     gene_only = dna[config.GENE_START_BUFFER+AMINO_ACID_IGNORE:len(dna)-config.GENE_END_BUFFER]
     gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
-    cc_locs = [loc.start()+config.GENE_START_BUFFER for loc in re.finditer('(?=CC)', invert_dna(gene_only[AMINO_ACID_IGNORE:]))] # Double check if this also needs a -1?
-        
+    cc_locs = [loc.start()+config.GENE_START_BUFFER for loc in re.finditer('(?=GG)', invert_dna(gene_only[AMINO_ACID_IGNORE:]))] # Double check if this also needs a -1?
+    # Make sure its using nGG pams for reverse compliment, look into this and see why nCCs are used
+    
     return [gg_locs, cc_locs]
 
 # Returns the 20 base-pairs before the PAM location
@@ -277,7 +278,7 @@ def create_mutations(dna, pam, mutant, complement=False):
     mutation_successful = False
     mutation_location = -1
     print("Checking " + str(candidate_dna) + " for " + str(mutant[0]) + ".")
-    print(codons[mutant[0]])
+    #print(codons[mutant[0]])
     # // NOTE // 
     # https://cdn.discordapp.com/attachments/275221682808029184/1132258135306948752/image.png
     # Screenshot, I believe this may have to do with the error- the desired acid is present in the candidate dna, but is not selected for mutation. I could be misreading/understanding/representing
@@ -455,7 +456,7 @@ def write_results(frontmatter, results, dna):
             sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
             sheet1.write(i + column_pos, 1, mutation.mutation[0])
             sheet1.write(i + column_pos, 2, mutation.mutation[1])
-            sheet1.write(i + column_pos, 3, mutation.mutation_loc)
+            sheet1.write(i + column_pos, 3, mutation.mutation_loc) # Change to start of gene to location of mutation
             sheet1.write(i + column_pos, 4, mutation.complement)
             sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
             sheet1.write(i + column_pos, 6, "")
@@ -467,8 +468,10 @@ def write_results(frontmatter, results, dna):
             seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
             seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
             seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
-    
-    
+            
+            if (mutation.complement):
+                mutation.dna = invert_dna(mutation.dna)
+            
             if mutation.mutation_loc < mutation.pam:  #upstream mutation
                 seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
                 seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
@@ -481,7 +484,11 @@ def write_results(frontmatter, results, dna):
                 seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
                 sheet1.write_rich_text(i + column_pos, 7, (
                 seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
-            
+                
+        
+            if (mutation.complement):
+                mutation.dna = invert_dna(mutation.dna)    
+                
             mutation_count = i + 2
             
         column_pos += mutation_count
@@ -490,6 +497,7 @@ def write_results(frontmatter, results, dna):
         column_pos += 1
         sheet1.write(column_pos, 0, dna)
         column_pos += 2
+        # Print both full sequence, as well as just the gene - the thousand surrounding pairs
     
     if (config.PRINT_GUIDE_LIBRARY):
 

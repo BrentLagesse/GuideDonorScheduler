@@ -10,11 +10,12 @@ mutations_to_attempt = dict()
 
 
 #fake mutations for testing
-mutations_to_attempt['met'] = 'val'
-mutations_to_attempt['ala'] = 'tyr'
-#mutations_to_attempt['*'] = 'arg'
-mutations_to_attempt['cys'] = 'thr'
-mutations_to_attempt['val'] = 'ile'
+#mutations_to_attempt['met'] = 'val'
+#mutations_to_attempt['ala'] = 'tyr'
+#mutations_to_attempt['cys'] = 'thr'
+#mutations_to_attempt['val'] = 'ile'
+mutations_to_attempt['*'] = 'arg'
+# Running just the * crashes, look into this
 
 # ----------------------------------------------------
 #
@@ -26,11 +27,17 @@ GUIDE_LIBRARY_OUTPUT_FILE = 'guide_library'
 GUIDE_LIBRARY_INPUT_FILE = 'guide_library'
 USE_GUIDE_LIBRARY = False
 
-DEFAULT_IN_FILE = 'S288C_YCL032W_STE50_flanking.fsa'
+DEFAULT_IN_FILE = 'S288C_YCL032W_STE50_flanking.fsa' # Set this up
 DEFAULT_OUT_FILE = 'mutation_output'
 
 QUIT_ON_NO_DATA = True
 
+# allow for multiple inputs
+#
+
+
+OUTPUT_TO_ONE_FILE = True
+# Choose to output to multiple outputs or just 1
 
 # ----------------------------------------------------
 #
@@ -40,6 +47,13 @@ QUIT_ON_NO_DATA = True
 
 PRINT_MUTATION_RESULTS = True
 PRINT_GUIDE_LIBRARY = True
+# Add collumn to guide library output of just guide, just one,
+# prefer GATC-guide
+# Add priority collumn, automatically rank the guides in based on their priority
+
+# collumn 1 = id
+# 2 = guide
+# 3 = priority
 
 # ----------------------------------------------------
 #
@@ -66,6 +80,17 @@ third_sequence = 'ACATCGAGACGTGTCCCTGCCTTGCG'
 
 GUIDE_LIBRARY_STRAND_PREFIX = 'GATC'
 GUIDE_LIBRARY_INVERSE_PREFIX = 'AAAC'
+
+# STOP CODON
+# Find a guide that is both early and good, replace some acid with a stop codon
+# Must be within first half of gene, earlier is better
+
+# eliminate last half first
+# best within first half
+
+# use guide library for this
+
+# In output, colouring may be off for reverse compliment gds
 
 # ----------------------------------------------------
 #
@@ -106,3 +131,9 @@ RUN_UNIT_TESTS = True
 VERBOSE_TESTING = True # Prints progress of unit testing
 VERBOSE_EXECUTION = True # Prints progress of main program
 PRINT_MUTATION_SUCCESS_COUNTS = True # Print success vs failed mutations after execution
+
+
+# NOTES
+# DNA - GUIDE ID - MUTATION ID
+
+# 
