@@ -34,7 +34,7 @@ argParser.add_argument("-i", "--input", help="Input File in FSA format")
 argParser.add_argument("-o", "--output", help="Output Filename base in FSA format")
 args = argParser.parse_args()
 
-in_file = args.input
+in_files = args.input
 out_base = args.output
 
 # set up codon lookup table
@@ -82,23 +82,38 @@ def get_dna():
     
     # Checks if default input/output files should be used
     confirm_input_args()
-    
+    input_data = []
      
     # If the input file fails to load, the program exits with an error message
+    
     try:
-        # open the input file
-        input_data = open(in_file, 'r')
+        # open the input files and insert into input_data
+        for line in in_files:
+            input_data.append(open(line, 'r'))
     except:
         if (config.QUIT_ON_NO_DATA):
             print("Opening DNA file failed, program exiting.")
             sys.exit()
-        
+    print(input_data)
+    
     #read data, separate the first line from the DNA and remove all the linebreaks from the DNA string
-    all_data = input_data.read()
-    input_data.close()
-    frontmatter = all_data.partition('\n')[0]
-    dna = all_data.partition('\n')[2]
-    dna = dna.replace('\n', '')
+    all_data = []
+    
+    for data in input_data:
+        all_data.append(data.read())
+        data.close()
+ 
+    frontmatter = []
+    dna = []
+    
+    for data in all_data:
+        
+        frontmatter.append(data.partition('\n')[0])
+        temp = data.partition('\n')[2]
+        dna.append(temp.replace('\n', ''))
+    
+    frontmatter = frontmatter[0]
+    dna = dna[0]
     
     # PROCESS EXITS IF GUIDE LIBRARY IS NOT IN USE
     if (config.USE_GUIDE_LIBRARY != True):
@@ -566,16 +581,16 @@ def write_results(frontmatter, results, dna):
 # Prints warnings if doing so, or if no defaults are configured.
 def confirm_input_args():
     
-    global in_file
+    global in_files
     global out_base
     
     # Checks if argument inputs are present, otherwise defaults to what is in config
     
-    # Checking in_file
-    if (in_file == None):
+    # Checking in_files
+    if (in_files == None):
         print("No input file detected, using default.")
-        in_file = config.DEFAULT_IN_FILE
-        if (config.DEFAULT_IN_FILE == None):
+        in_files = config.DEFAULT_IN_FILES
+        if (in_files == None):
                 print("No default input file present.")
     
     # Checking out_file
