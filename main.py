@@ -111,10 +111,7 @@ def get_dna():
         frontmatter.append(data.partition('\n')[0])
         temp = data.partition('\n')[2]
         dna.append(temp.replace('\n', ''))
-    
-    frontmatter = frontmatter[0]
-    dna = dna[0]
-    
+        
     # PROCESS EXITS IF GUIDE LIBRARY IS NOT IN USE
     if (config.USE_GUIDE_LIBRARY != True):
         return frontmatter, dna, None
@@ -423,13 +420,18 @@ def invert_dna(dna):
     return inv_dna
 
 #print(invert_dna('GACCGTGCGACTGGGCGTCTCGGATCTAAGCTTTTGAATATTCCCTGTTTGAAGAGCATACGCTCTTCTTCTAACTTGATAAAATAAATATCCAGTCTGATAAATTGACAAGCTCAATTAAATCCAGAAAGCTGAAAGCTGAGGGAATATTCAAAAGCTTACTGGATACGTTGAGGCAATACGATTCGTCGATACAAAATTTAAACATCGAGACGTGTCCCTGCCTTGCG'))
-def write_results(frontmatter, results, dna):
+
+# Now expect all of these to be arrays.
+def write_results(frontmatter_list, results_list, dna_list, use_output_title = True):
+    # Use_output_title determines if the output in config will be used, or
+    # if a title will automatically be generated from the frontmatter
 
     global gs
     wb = Workbook()
-    
+   
     if (config.PRINT_MUTATION_RESULTS):
-
+        
+        
         if config.PRINT_MUTATION_SUCCESS_COUNTS:
             print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
             print('failed due to pam: ' + str(gs.failed_due_to_pam))
@@ -461,54 +463,57 @@ def write_results(frontmatter, results, dna):
         first = config.first_sequence
         second = config.second_sequence
         third = config.third_sequence
+               
+        for g in range(len(results_list)):
+            
+            frontmatter = frontmatter_list[g]
+            results = results_list[g]
+            dna = dna_list[g]
         
-        mutation_count = 0 # Used for placing the original sequence after printing all mutations
-        
-        cur_id = (str(frontmatter).partition(' ')[0])[1:]
-       
-        
-        for i,mutation in enumerate(results):
-            sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
-            sheet1.write(i + column_pos, 1, mutation.mutation[0])
-            sheet1.write(i + column_pos, 2, mutation.mutation[1])
-            sheet1.write(i + column_pos, 3, mutation.mutation_loc) # Change to start of gene to location of mutation
-            sheet1.write(i + column_pos, 4, mutation.complement)
-            sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
-            sheet1.write(i + column_pos, 6, "")
+            cur_id = (str(frontmatter).partition(' ')[0])[1:]
+           
             
-            
-            seg_first = (mutation.dna[0:len(first)], extra_font)
-            seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
-            seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
-            seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
-            seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
-            seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
-            
-            if (mutation.complement):
-                mutation.dna = invert_dna(mutation.dna)
-            # Potentially reading positions (and donor) from non inverted gene, when it should be read from reverse compliment?
-            # Not fully sure, still gotta look into this // NOTE \\ 
-            
-            if mutation.mutation_loc < mutation.pam:  #upstream mutation
-                seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
-                seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
-                seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-                sheet1.write_rich_text(i + column_pos, 7, (
-                seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
-            else:    #downstream mutation
-                seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
-                seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
-                seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
-                sheet1.write_rich_text(i + column_pos, 7, (
-                seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
+            for i,mutation in enumerate(results):
+                sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
+                sheet1.write(i + column_pos, 1, mutation.mutation[0])
+                sheet1.write(i + column_pos, 2, mutation.mutation[1])
+                sheet1.write(i + column_pos, 3, mutation.mutation_loc) # Change to start of gene to location of mutation
+                sheet1.write(i + column_pos, 4, mutation.complement)
+                sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
+                sheet1.write(i + column_pos, 6, "")
                 
-        
-            if (mutation.complement):
-                mutation.dna = invert_dna(mutation.dna)    
                 
-            mutation_count = i + 2
+                seg_first = (mutation.dna[0:len(first)], extra_font)
+                seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
+                seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
+                seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
+                seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
+                seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
+                
+                if (mutation.complement):
+                    mutation.dna = invert_dna(mutation.dna)
+                # Potentially reading positions (and donor) from non inverted gene, when it should be read from reverse compliment?
+                # Not fully sure, still gotta look into this // NOTE \\ 
+                
+                if mutation.mutation_loc < mutation.pam:  #upstream mutation
+                    seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
+                    seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
+                    seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
+                    sheet1.write_rich_text(i + column_pos, 7, (
+                    seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
+                else:    #downstream mutation
+                    seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
+                    seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
+                    seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
+                    sheet1.write_rich_text(i + column_pos, 7, (
+                    seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
+                    
             
-        column_pos += mutation_count
+                if (mutation.complement):
+                    mutation.dna = invert_dna(mutation.dna)    
+                    
+                
+            column_pos += i + 2
         
         sheet1.write(column_pos, 0, "Original Sequence")
         column_pos += 1
@@ -517,7 +522,7 @@ def write_results(frontmatter, results, dna):
         # Print both full sequence, as well as just the gene - the thousand surrounding pairs
     
     if (config.PRINT_GUIDE_LIBRARY):
-
+        
         column_pos = 0
     
         sheet2 = wb.add_sheet('Guide Library')
@@ -531,41 +536,48 @@ def write_results(frontmatter, results, dna):
         extra_font = xlwt.easyfont('color_index gray50')
         guide_font = xlwt.easyfont('color_index blue')
         
-        cur_id = (str(frontmatter).partition(' ')[0])[1:]
-        
-        guides = []
-        inv_guides = []
-        
-        for i,mutation in enumerate(results):
-            sheet2.write(i + column_pos, 0, cur_id + "_" + str(i))
+        for g in range(len(results_list)):
             
-            guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
-            inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)  
-         
-            prefix = config.GUIDE_LIBRARY_STRAND_PREFIX
-            inv_prefix = config.GUIDE_LIBRARY_INVERSE_PREFIX
+            frontmatter = frontmatter_list[g]
+            results = results_list[g]
+            dna = dna_list[g]
         
-            if mutation.mutation_loc < mutation.pam:  #upstream mutation
-                _prefix = (prefix, dna_font)
-                sheet2.write_rich_text(i + column_pos, 1, (
-                _prefix, guide))
-                guides.append(_prefix[0]+guide[0])
-                    
-                _prefix = (inv_prefix, dna_font)
-                sheet2.write_rich_text(i + column_pos, 2, (
-                _prefix, inv_guide))
-                inv_guides.append(_prefix[0]+inv_guide[0])
-            else:    #downstream mutation
-                _prefix = (inv_prefix, dna_font)
-                sheet2.write_rich_text(i + column_pos, 1, (
-                _prefix, guide))
-                inv_guides.append(_prefix[0]+guide[0])
+            cur_id = (str(frontmatter).partition(' ')[0])[1:]
+            
+            guides = []
+            inv_guides = []
+        
+            for i,mutation in enumerate(results):
+                sheet2.write(i + column_pos, 0, cur_id + "_" + str(i))
                 
-                _prefix = (prefix, dna_font)
-                sheet2.write_rich_text(i + column_pos, 2, (
-                _prefix, inv_guide))
-                guides.append(_prefix[0]+inv_guide[0])
-        
+                guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
+                inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)  
+             
+                prefix = config.GUIDE_LIBRARY_STRAND_PREFIX
+                inv_prefix = config.GUIDE_LIBRARY_INVERSE_PREFIX
+            
+                if mutation.mutation_loc < mutation.pam:  #upstream mutation
+                    _prefix = (prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 1, (
+                    _prefix, guide))
+                    guides.append(_prefix[0]+guide[0])
+                        
+                    _prefix = (inv_prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 2, (
+                    _prefix, inv_guide))
+                    inv_guides.append(_prefix[0]+inv_guide[0])
+                else:    #downstream mutation
+                    _prefix = (inv_prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 1, (
+                    _prefix, guide))
+                    inv_guides.append(_prefix[0]+guide[0])
+                    
+                    _prefix = (prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 2, (
+                    _prefix, inv_guide))
+                    guides.append(_prefix[0]+inv_guide[0])
+                    
+            column_pos += i + 2
         
         # Formatting the output data for readability
         out_data = ["Guides", guides, "Guides inverted", inv_guides]
@@ -644,19 +656,27 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
 def execute_program():
 
     # 1)  Choose the gene to mutate
-    frontmatter, dna, guide_lib = get_dna()
-    inv_dna_full = invert_dna(dna)
-    # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
-    #  This function finds all the pams
+    frontmatter, dna_list, guide_lib = get_dna()
     
-    pams = get_locations(dna) # Returns pams from both regular strand and inverse compliment
-    dna_locs = pams[0]
-    inv_dna_locs = pams[1]
+    combined_mutation_page = []
     
-    all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
+    for i in range(0,len(dna_list)):
+        dna = dna_list[i]
+        inv_dna_full = invert_dna(dna)
+        # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
+        #  This function finds all the pams
+        
+        pams = get_locations(dna) # Returns pams from both regular strand and inverse compliment
+        dna_locs = pams[0]
+        inv_dna_locs = pams[1]
+        
+        all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
+        combined_mutation_page.append(all_mutations)
+        # at this point, we have everything we need to output the results
+        if not config.OUTPUT_TO_ONE_FILE:
+            write_results([frontmatter[i]], [all_mutations], [dna], False)
     
-    # at this point, we have everything we need to output the results
-    write_results(frontmatter, all_mutations, dna)
-
+    if config.OUTPUT_TO_ONE_FILE:
+        write_results(frontmatter, combined_mutation_page, dna_list)
 
 execute_program()

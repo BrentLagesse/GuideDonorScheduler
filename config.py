@@ -27,8 +27,10 @@ GUIDE_LIBRARY_OUTPUT_FILE = 'guide_library'
 GUIDE_LIBRARY_INPUT_FILE = 'guide_library'
 USE_GUIDE_LIBRARY = False
 
-DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa'] # Set this up
+DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
+                    'S288C_YCL032W_STE50_flanking.fsa'] # Set this up
 DEFAULT_OUT_FILE = 'mutation_output'
+# \\ NOTE! Only used if outputting to 1 file
 
 QUIT_ON_NO_DATA = True
 
