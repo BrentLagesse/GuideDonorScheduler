@@ -250,8 +250,8 @@ def create_mutations(dna, pam, mutant, complement=False):
     
     
     # If we are on the reverse compliment, invert the guide // NOTE this might not work yet
-    if (complement):
-        guide = invert_dna(guide)
+#    if (complement):
+#        guide = invert_dna(guide)
     
     # introduce mutation
 
@@ -379,8 +379,8 @@ def create_mutations(dna, pam, mutant, complement=False):
     if mutation_successful:
         pam_loc = pam_loc_in_candidate
         if complement:   # if we are on the reverse complement, invert it back before we add the other stuff
-            candidate_dna = invert_dna(candidate_dna)
-            guide = invert_dna(guide)
+#            candidate_dna = invert_dna(candidate_dna)
+#            guide = invert_dna(guide)
             mutation_location = len(candidate_dna) - mutation_location
             pam_loc = len(candidate_dna) - pam_loc
 
@@ -471,6 +471,8 @@ def write_results(frontmatter, results, dna):
             
             if (mutation.complement):
                 mutation.dna = invert_dna(mutation.dna)
+            # Potentially reading positions (and donor) from non inverted gene, when it should be read from reverse compliment?
+            # Not fully sure, still gotta look into this // NOTE \\ 
             
             if mutation.mutation_loc < mutation.pam:  #upstream mutation
                 seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)

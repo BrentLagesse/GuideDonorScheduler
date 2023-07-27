@@ -32,12 +32,12 @@ DEFAULT_OUT_FILE = 'mutation_output'
 
 QUIT_ON_NO_DATA = True
 
-# allow for multiple inputs
+# allow for multiple inputs // NOTE \\ 
 #
 
 
 OUTPUT_TO_ONE_FILE = True
-# Choose to output to multiple outputs or just 1
+# Choose to output to multiple outputs or just 1 // NOTE \\ 
 
 # ----------------------------------------------------
 #
@@ -53,7 +53,7 @@ PRINT_GUIDE_LIBRARY = True
 
 # collumn 1 = id
 # 2 = guide
-# 3 = priority
+# 3 = priority // NOTE \\ 
 
 # ----------------------------------------------------
 #
@@ -90,7 +90,7 @@ GUIDE_LIBRARY_INVERSE_PREFIX = 'AAAC'
 
 # use guide library for this
 
-# In output, colouring may be off for reverse compliment gds
+# In output, colouring may be off for reverse compliment gds // NOTE \\ 
 
 # ----------------------------------------------------
 #
