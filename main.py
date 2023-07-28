@@ -515,11 +515,16 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_title = T
                 
             column_pos += i + 2
         
-        sheet1.write(column_pos, 0, "Original Sequence")
-        column_pos += 1
-        sheet1.write(column_pos, 0, dna)
-        column_pos += 2
-        # Print both full sequence, as well as just the gene - the thousand surrounding pairs
+            sheet1.write(column_pos, 0, "Original Sequence")
+            column_pos += 1
+            sheet1.write(column_pos, 0, dna)
+            column_pos += 1
+            sheet1.write(column_pos, 0, "Original Gene")
+            column_pos += 1
+            sheet1.write(column_pos, 0, dna[config.GENE_START_BUFFER:-config.GENE_END_BUFFER])
+            #NOTE // Please check in and make sure that crops correctly
+            column_pos += 2
+            # Print both full sequence, as well as just the gene - the thousand surrounding pairs
     
     if (config.PRINT_GUIDE_LIBRARY):
         
@@ -657,6 +662,7 @@ def execute_program():
 
     # 1)  Choose the gene to mutate
     frontmatter, dna_list, guide_lib = get_dna()
+    # At this stage, the dna is the full dna, buffer still included.
     
     combined_mutation_page = []
     
