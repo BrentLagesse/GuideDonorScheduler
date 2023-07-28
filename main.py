@@ -539,6 +539,10 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         sheet2.write(column_pos, 0, 'ID')
         sheet2.write(column_pos, 1, 'GUIDE')
         sheet2.write(column_pos, 2, 'INVERSE COMPLIMENT')
+        sheet2.write(column_pos, 3, 'GUIDE PRIORITY')
+        sheet2.write(column_pos, 4, 'INVERSE COMPLIMENT PRIORITY')
+        sheet2.write(column_pos, 5, 'GUIDE WITH HEADER')
+        sheet2.write(column_pos, 6, 'INVERSE COMPLIMENT WITH HEADER')
         
         column_pos += 2
     
@@ -565,30 +569,32 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
              
                 prefix = config.GUIDE_LIBRARY_STRAND_PREFIX
                 inv_prefix = config.GUIDE_LIBRARY_INVERSE_PREFIX
-            
+                _blank = ("", dna_font)
                 if mutation.mutation_loc < mutation.pam:  #upstream mutation
                     _prefix = (prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 1, (
-                    _prefix, guide))
+                    sheet2.write_rich_text(i + column_pos, 1, (_blank, guide))
+                    sheet2.write_rich_text(i + column_pos, 5, (_prefix, guide))
                     guides.append(_prefix[0]+guide[0])
                         
                     _prefix = (inv_prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 2, (
-                    _prefix, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 2, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, inv_guide))
                     inv_guides.append(_prefix[0]+inv_guide[0])
                 else:    #downstream mutation
                     _prefix = (inv_prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 1, (
-                    _prefix, guide))
+                    sheet2.write_rich_text(i + column_pos, 1, (_blank, guide))
+                    sheet2.write_rich_text(i + column_pos, 5, (_prefix, guide))
                     inv_guides.append(_prefix[0]+guide[0])
                     
                     _prefix = (prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 2, (
-                    _prefix, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 2, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, inv_guide))
                     guides.append(_prefix[0]+inv_guide[0])
                     
             column_pos += i + 2
         
+        # PROBABLY REDO THIS
+        # Dont use json, figure out how to read the excel back in directly
         # Formatting the output data for readability
         out_data = ["Guides", guides, "Guides inverted", inv_guides]
         with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
