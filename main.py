@@ -85,7 +85,6 @@ def get_dna():
     input_data = []
      
     # If the input file fails to load, the program exits with an error message
-    
     try:
         # open the input files and insert into input_data
         for line in in_files:
