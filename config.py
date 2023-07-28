@@ -29,7 +29,8 @@ USE_GUIDE_LIBRARY = False
 
 DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
                     'S288C_YIL144W_NDC80_flanking.fsa'] # Set this up
-DEFAULT_OUT_FILE = 'mutation_output'
+DEFAULT_OUT_FILE = "Mutation_Results_Combined_Input"
+MULTI_OUTPUT_PREFIX = "Mutation_Results_"
 # \\ NOTE! Only used if outputting to 1 file
 
 QUIT_ON_NO_DATA = True

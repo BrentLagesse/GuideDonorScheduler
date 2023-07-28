@@ -422,12 +422,17 @@ def invert_dna(dna):
 #print(invert_dna('GACCGTGCGACTGGGCGTCTCGGATCTAAGCTTTTGAATATTCCCTGTTTGAAGAGCATACGCTCTTCTTCTAACTTGATAAAATAAATATCCAGTCTGATAAATTGACAAGCTCAATTAAATCCAGAAAGCTGAAAGCTGAGGGAATATTCAAAAGCTTACTGGATACGTTGAGGCAATACGATTCGTCGATACAAAATTTAAACATCGAGACGTGTCCCTGCCTTGCG'))
 
 # Now expect all of these to be arrays.
-def write_results(frontmatter_list, results_list, dna_list, use_output_title = True):
-    # Use_output_title determines if the output in config will be used, or
+def write_results(frontmatter_list, results_list, dna_list, use_output_file = True):
+    # use_output_file determines if the output in config will be used, or
     # if a title will automatically be generated from the frontmatter
 
     global gs
     wb = Workbook()
+   
+    if use_output_file:
+        output_file = out_base;
+    else:
+        output_file = config.MULTI_OUTPUT_PREFIX+(str(frontmatter_list[0]).partition(' ')[0])[1:]
    
     if (config.PRINT_MUTATION_RESULTS):
         
@@ -591,7 +596,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_title = T
             
     
     if (config.PRINT_GUIDE_LIBRARY) or (config.PRINT_MUTATION_RESULTS):
-        wb.save(out_base + '.xls')
+        wb.save(output_file + '.xls')
     
 # Checks if no arguments are given, will set input and output files to the default
 # if none are present.
