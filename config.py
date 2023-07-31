@@ -14,8 +14,7 @@ mutations_to_attempt = dict()
 #mutations_to_attempt['ala'] = 'tyr'
 #mutations_to_attempt['cys'] = 'thr'
 #mutations_to_attempt['val'] = 'ile'
-mutations_to_attempt['*'] = 'arg'
-# Running just the * crashes, look into this
+mutations_to_attempt['*'] = 'trp'
 
 # ----------------------------------------------------
 #
