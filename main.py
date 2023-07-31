@@ -481,7 +481,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
                 sheet1.write(i + column_pos, 1, mutation.mutation[0])
                 sheet1.write(i + column_pos, 2, mutation.mutation[1])
-                sheet1.write(i + column_pos, 3, mutation.mutation_loc) # Change to start of gene to location of mutation
+                sheet1.write(i + column_pos, 3, mutation.pam) # Change to start of gene to location of mutation
                 sheet1.write(i + column_pos, 4, mutation.complement)
                 sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam + 3))) # +3 should make this the distance from the cut site
                 sheet1.write(i + column_pos, 6, "")
