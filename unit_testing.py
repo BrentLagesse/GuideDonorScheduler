@@ -14,6 +14,11 @@ def test_finding_pams():
         print("Testing PAM Locator")
     
     frontmatter, dna, guide_lib = main.get_dna();
+    
+    #   Just uses first DNA file
+    frontmatter = frontmatter[0]
+    dna = dna[0]
+    
     inv_dna = main.invert_dna(dna)
     locs = np.array(main.get_locations(dna));
     pams = []
@@ -25,8 +30,9 @@ def test_finding_pams():
             success = False
     for l in locs[1]:
         p = inv_dna[l:l+3]
+        p = main.invert_dna(p)
         pams.append(p)
-        if (not p[:-1] == "CC"):
+        if (not p[1:] == "CC"):
             success = False
     if (config.VERBOSE_TESTING):
         print("PAMs identified:")
