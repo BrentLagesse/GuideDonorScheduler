@@ -32,7 +32,7 @@ def test_finding_pams():
         p = inv_dna[l:l+3]
         p = main.invert_dna(p)
         pams.append(p)
-        if (not p[1:] == "CC"):
+        if (not p[:-1] == "CC"):
             success = False
     if (config.VERBOSE_TESTING):
         print("PAMs identified:")
@@ -94,7 +94,26 @@ def test_mutation_results():
     
     # I think all this should be good*? :
         
+def test_dna_inverter():
+    
+    if (config.VERBOSE_TESTING):
+        print("Testing DNA Inverter")
         
+    dna = 'AGACCTTGATTCGTGCTGTTTCTTCTCCTCAA'
+    expected_output = 'TTGAGGAGAAGAAACAGCACGAATCAAGGTCT'
+    inv_dna = main.invert_dna(dna)
+    
+    if (config.VERBOSE_TESTING):
+        print("Testing DNA : " + str(dna))
+        print("Output recieved : " + str(inv_dna))
+        print("Output expected : " + str(expected_output))
+        
+    if (inv_dna == expected_output):
+        if (config.VERBOSE_TESTING):
+            print("DNA Inverter passed testing")
+    else:
+        print("DNA Inverter failed testing")
+         
 # Write quick test to try * and see if it mutates a huge chunk of the gene
 
 # Reference, STE50 should return 
@@ -102,7 +121,8 @@ def test_mutation_results():
 # Execute all unit tests
     
 def run_unit_tests():
-    test_finding_pams()
+    test_dna_inverter()
+    #test_finding_pams()
     #test_guide_library()
     #test_mutation_identification()
 
