@@ -122,7 +122,7 @@ def test_dna_inverter():
     
 def run_unit_tests():
     test_dna_inverter()
-    #test_finding_pams()
+    test_finding_pams()
     #test_guide_library()
     #test_mutation_identification()
 

@@ -135,7 +135,7 @@ def get_locations(dna):
     AMINO_ACID_IGNORE = 1 * 3 # // Ignores the first amino acid in the sequence
     gene_only = dna[config.GENE_START_BUFFER+AMINO_ACID_IGNORE:len(dna)-config.GENE_END_BUFFER]
     gg_locs = [loc.start()+config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in re.finditer('(?=GG)', gene_only)]   # minus one accounts for the N of NGG
-    cc_locs = [loc.start()+config.GENE_START_BUFFER for loc in re.finditer('(?=GG)', invert_dna(gene_only[AMINO_ACID_IGNORE:]))] # Double check if this also needs a -1?
+    cc_locs = [loc.start()+config.GENE_START_BUFFER - 1 for loc in re.finditer('(?=GG)', invert_dna(gene_only[AMINO_ACID_IGNORE:]))] # Double check if this also needs a -1?
     # Make sure its using nGG pams for reverse compliment, look into this and see why nCCs are used
     
     return [gg_locs, cc_locs]
@@ -288,7 +288,8 @@ def create_mutations(dna, pam, mutant, complement=False):
     #candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
     mutation_successful = False
     mutation_location = -1
-    print("Checking " + str(candidate_dna) + " for " + str(mutant[0]) + ".")
+    if (config.VERBOSE_EXECUTION):
+        print("Checking " + str(candidate_dna) + " for " + str(mutant[0]) + ".")
     #print(codons[mutant[0]])
     # // NOTE // 
     # https://cdn.discordapp.com/attachments/275221682808029184/1132258135306948752/image.png
@@ -301,6 +302,8 @@ def create_mutations(dna, pam, mutant, complement=False):
             #convert first_amino_acid_loc from global dna to candidate dna
             #candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
             candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+            if (config.PRINT_MUTATION_CHECKS):
+                print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if mutation_successful:
@@ -389,12 +392,12 @@ def create_mutations(dna, pam, mutant, complement=False):
 
     if mutation_successful:
         pam_loc = pam_loc_in_candidate
-        if complement:   # if we are on the reverse complement, invert it back before we add the other stuff
-#            candidate_dna = invert_dna(candidate_dna)
-#            guide = invert_dna(guide)
+        if False and complement:   # if we are on the reverse complement, invert it back before we add the other stuff
+            candidate_dna = invert_dna(candidate_dna)
+            guide = invert_dna(guide)
             mutation_location = len(candidate_dna) - mutation_location
             pam_loc = len(candidate_dna) - pam_loc
-
+        
         candidate_dna = insert_extra_sequence(candidate_dna, guide)
         # we just added 52 + 20 (guide) basepairs
         #guide pam mutation mutationloc dna
