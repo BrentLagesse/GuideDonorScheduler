@@ -22,8 +22,11 @@ mutations_to_attempt['*'] = 'trp'
 #
 # ----------------------------------------------------
 
-GUIDE_LIBRARY_OUTPUT_FILE = 'guide_library'
-GUIDE_LIBRARY_INPUT_FILE = 'guide_library'
+# WARNING !! Guide Library ouput files will be overwritten when output, 
+# be sure to move any modifications to input to avoid losing data.
+
+GUIDE_LIBRARY_OUTPUT_FILE = 'guide_library_output'
+GUIDE_LIBRARY_INPUT_FILE = 'guide_library_input'
 USE_GUIDE_LIBRARY = False
 
 DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',

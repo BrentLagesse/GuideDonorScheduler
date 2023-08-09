@@ -1,11 +1,14 @@
 import argparse
 import re
 from dataclasses import dataclass
-import xlwt
-from xlwt import Workbook
 import sys
 import json
 
+# xlrd, xlutils and xlwt modules need to be installed.  
+# Can be done via pip install <module>
+
+import xlwt
+from xlwt import Workbook
 from xlrd import open_workbook
 from xlutils.copy import copy
 
@@ -127,8 +130,10 @@ def get_dna():
             print("Opening GUIDE file failed, program exiting.")
             sys.exit()
     
+    print("Currently updating guide librarys from json to excel.")
+    sys.exit()
     # Removes tags added for readability
-    guide_data = [guide_input[1],guide_input[3]]
+    guide_data = None
     
     return frontmatter, dna, guide_data
 
@@ -432,7 +437,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
     # if a title will automatically be generated from the frontmatter
 
     global gs
-    wb = Workbook()
    
     if use_output_file:
         output_file = out_base;
@@ -441,6 +445,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
    
     if (config.PRINT_MUTATION_RESULTS):
         
+        wb = Workbook()
         
         if config.PRINT_MUTATION_SUCCESS_COUNTS:
             print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
@@ -535,19 +540,28 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
             #NOTE // Please check in and make sure that crops correctly
             column_pos += 2
             # Print both full sequence, as well as just the gene - the thousand surrounding pairs
+            
+            
+            # Saves the file
+            
+            wb.save(output_file + '.xls')
+    
     
     if (config.PRINT_GUIDE_LIBRARY):
+        
+        wb = Workbook()
         
         column_pos = 0
     
         sheet2 = wb.add_sheet('Guide Library')
-        sheet2.write(column_pos, 0, 'ID')
-        sheet2.write(column_pos, 1, 'GUIDE')
-        sheet2.write(column_pos, 2, 'INVERSE COMPLIMENT')
-        sheet2.write(column_pos, 3, 'GUIDE PRIORITY')
-        sheet2.write(column_pos, 4, 'INVERSE COMPLIMENT PRIORITY')
-        sheet2.write(column_pos, 5, 'GUIDE WITH HEADER')
-        sheet2.write(column_pos, 6, 'INVERSE COMPLIMENT WITH HEADER')
+        sheet2.write(column_pos, 0, 'GENE ID')
+        sheet2.write(column_pos, 1, 'GUIDE ID')
+        sheet2.write(column_pos, 2, 'GUIDE')
+        sheet2.write(column_pos, 3, 'INVERSE COMPLIMENT')
+        sheet2.write(column_pos, 4, 'GUIDE PRIORITY')
+        sheet2.write(column_pos, 5, 'INVERSE COMPLIMENT PRIORITY')
+        sheet2.write(column_pos, 6, 'GUIDE WITH HEADER')
+        sheet2.write(column_pos, 7, 'INVERSE COMPLIMENT WITH HEADER')
         
         column_pos += 2
     
@@ -567,7 +581,8 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
             inv_guides = []
         
             for i,mutation in enumerate(results):
-                sheet2.write(i + column_pos, 0, cur_id + "_" + str(i))
+                sheet2.write(i + column_pos, 0, cur_id)
+                sheet2.write(i + column_pos, 1, cur_id + "_" + str(i))
                 
                 guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
                 inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)  
@@ -577,23 +592,23 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 _blank = ("", dna_font)
                 if mutation.mutation_loc < mutation.pam:  #upstream mutation
                     _prefix = (prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 1, (_blank, guide))
-                    sheet2.write_rich_text(i + column_pos, 5, (_prefix, guide))
+                    sheet2.write_rich_text(i + column_pos, 2, (_blank, guide))
+                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, guide))
                     guides.append(_prefix[0]+guide[0])
                         
                     _prefix = (inv_prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 2, (_blank, inv_guide))
-                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 3, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, inv_guide))
                     inv_guides.append(_prefix[0]+inv_guide[0])
                 else:    #downstream mutation
                     _prefix = (inv_prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 1, (_blank, guide))
-                    sheet2.write_rich_text(i + column_pos, 5, (_prefix, guide))
+                    sheet2.write_rich_text(i + column_pos, 2, (_blank, guide))
+                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, guide))
                     inv_guides.append(_prefix[0]+guide[0])
                     
                     _prefix = (prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 2, (_blank, inv_guide))
-                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 3, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, inv_guide))
                     guides.append(_prefix[0]+inv_guide[0])
                     
             column_pos += i + 2
@@ -601,13 +616,13 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         # PROBABLY REDO THIS
         # Dont use json, figure out how to read the excel back in directly
         # Formatting the output data for readability
-        out_data = ["Guides", guides, "Guides inverted", inv_guides]
-        with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
-            json.dump(out_data, file)
-            
-    
-    if (config.PRINT_GUIDE_LIBRARY) or (config.PRINT_MUTATION_RESULTS):
-        wb.save(output_file + '.xls')
+        
+        wb.save(config.GUIDE_LIBRARY_OUTPUT_FILE + '.xls')
+        
+        #out_data = ["Guides", guides, "Guides inverted", inv_guides]
+        #with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
+        #    json.dump(out_data, file)
+        
     
 # Checks if no arguments are given, will set input and output files to the default
 # if none are present.
