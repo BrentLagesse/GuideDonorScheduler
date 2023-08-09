@@ -9,8 +9,8 @@ import json
 
 import xlwt
 from xlwt import Workbook
-from xlrd import open_workbook
-from xlutils.copy import copy
+import xlrd
+import xlutils
 
 # Other modules
 import config
@@ -31,6 +31,13 @@ class GlobalStats:
     failed_due_to_pam: int
     failed_due_to_guide_library: int
     succeeded: int
+
+@dataclass
+class PrebuiltGuide:
+    id: int
+    guide: str
+    priority: int
+    compliment: bool
 
 gs = GlobalStats(0,0,0,0)
 
@@ -121,18 +128,19 @@ def get_dna():
     if (config.USE_GUIDE_LIBRARY != True):
         return frontmatter, dna, None
     
-    try:
-        # open the input file
-        with open(config.GUIDE_LIBRARY_INPUT_FILE+".json", "r") as file:
-            guide_input = json.load(file)
-    except:
-        if (config.QUIT_ON_NO_DATA):
-            print("Opening GUIDE file failed, program exiting.")
-            sys.exit()
+    workbook = xlrd.open_workbook(config.GUIDE_LIBRARY_INPUT_FILE+".xls")
+    worksheet = workbook.sheet_by_index(0)
     
-    print("Currently updating guide librarys from json to excel.")
-    sys.exit()
-    # Removes tags added for readability
+    running = True
+    i = 2
+    
+    while running:
+        i += 1
+        cur = worksheet.cell_value(i, 1)
+        print(cur)
+        if (cur == config.GUIDE_LIBRARY_EOF):
+            running = False
+    
     guide_data = None
     
     return frontmatter, dna, guide_data
@@ -156,7 +164,10 @@ def create_guides(dna, loc):
 # Returns if the given guide is held within the guide library
 def is_guide_in_library(guide, guide_library):
     
-    return (config.GUIDE_LIBRARY_STRAND_PREFIX+guide) in guide_library[0] or (config.GUIDE_LIBRARY_INVERSE_PREFIX+guide) in guide_library[1]
+    for guide_entry in guide_library:
+        if guide_entry.guide == guide:
+            return True
+    return False
 
 # Combines the candidate dna with the guide, as well as the extra sequences defined within config
 def insert_extra_sequence(candidate_dna, guide):
@@ -612,6 +623,9 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                     guides.append(_prefix[0]+inv_guide[0])
                     
             column_pos += i + 2
+        
+        # END OF FILE LINE FOR READER
+        sheet2.write(column_pos, 0, config.GUIDE_LIBRARY_EOF)
         
         # PROBABLY REDO THIS
         # Dont use json, figure out how to read the excel back in directly
