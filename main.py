@@ -35,6 +35,7 @@ class GlobalStats:
 @dataclass
 class PrebuiltGuide:
     id: int
+    gene: str
     guide: str
     priority: int
     compliment: bool
@@ -132,16 +133,31 @@ def get_dna():
     worksheet = workbook.sheet_by_index(0)
     
     running = True
-    i = 2
+    i = 1
     
+    guide_data = []
+
     while running:
         i += 1
-        cur = worksheet.cell_value(i, 1)
-        print(cur)
+        cur = worksheet.cell_value(i, 0)
+        
+        if (cur != ""):
+            
+            entry = PrebuiltGuide(  cur,
+                                    worksheet.cell_value(i, 1),
+                                    worksheet.cell_value(i, 2), 
+                                    worksheet.cell_value(i, 4), 
+                                    False )
+            entry_inv = PrebuiltGuide(  cur,
+                                    worksheet.cell_value(i, 1),
+                                    worksheet.cell_value(i, 3), 
+                                    worksheet.cell_value(i, 5), 
+                                    True )
+            
+            guide_data.append(entry)
+            
         if (cur == config.GUIDE_LIBRARY_EOF):
             running = False
-    
-    guide_data = None
     
     return frontmatter, dna, guide_data
 
