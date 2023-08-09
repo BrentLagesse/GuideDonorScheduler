@@ -34,10 +34,10 @@ class GlobalStats:
 
 @dataclass
 class PrebuiltGuide:
-    id: int
+    id: str
     gene: str
     guide: str
-    priority: int
+    priority: float
     compliment: bool
 
 gs = GlobalStats(0,0,0,0)
@@ -279,7 +279,6 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
 def create_mutations(dna, pam, mutant, complement=False):
     global gs
-    global guide_lib
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
     UPSTREAM = config.UP_ACIDS * 3
     DOWNSTREAM = config.DOWN_ACIDS * 3
@@ -288,11 +287,20 @@ def create_mutations(dna, pam, mutant, complement=False):
     guide = create_guides(dna, pam)
     
     # If using the guide library, automatically reject any guide not present in the library
-    if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
-        if config.VERBOSE_EXECUTION:
-            print("Failed to find guide within guide library")
-        gs.failed_due_to_guide_library += 1
-        return None
+    #if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
+    #    if config.VERBOSE_EXECUTION:
+    #         print("Failed to find guide within guide library")
+    #     gs.failed_due_to_guide_library += 1
+    #     return None
+    
+    # TODO
+    
+    # NOTE \\ TEMPORARILY DISABLED
+    # Gonna rewrite this later, plan is:
+        
+    # Get all possible mutations and guides
+    # If using library, then go through and eliminate unwanted guides
+    # Finally go through and eliminate/rank guides by priority
     
     
     # If we are on the reverse compliment, invert the guide // NOTE this might not work yet
