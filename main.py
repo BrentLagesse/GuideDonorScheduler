@@ -6,6 +6,9 @@ from xlwt import Workbook
 import sys
 import json
 
+from xlrd import open_workbook
+from xlutils.copy import copy
+
 # Other modules
 import config
 
