@@ -36,17 +36,25 @@ DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
                     'NUF2_1000flanking.fsa',
                     'TRP1_1000flanking.fsa'] # Set this up
 DEFAULT_OUT_FILE = "Mutation_Results_Combined_Output"
+
+
+
+OUTPUT_TO_ONE_FILE = True
+# Choose to output to multiple outputs or just one
+
+# If false, each gene will be output to an individual file following the
+# nameing format of:
+# MULTI_OUTPUT_PREFIX + gene
+# the output prefix is defined below
+
 MULTI_OUTPUT_PREFIX = "Mutation_Results_"
-# \\ NOTE! Only used if outputting to 1 file
+# \\ NOTE! Only used if outputting to more than one file
 
 QUIT_ON_NO_DATA = True
 
 # allow for multiple inputs // NOTE \\ 
 #
 
-
-OUTPUT_TO_ONE_FILE = True
-# Choose to output to multiple outputs or just 1 // NOTE \\ 
 
 # ----------------------------------------------------
 #

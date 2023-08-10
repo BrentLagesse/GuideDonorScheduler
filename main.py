@@ -41,6 +41,7 @@ class PrebuiltGuide:
     compliment: bool
 
 gs = GlobalStats(0,0,0,0)
+guide_lib = []
 
 # set up the argument parser so we can accept commandline arguments
 argParser = argparse.ArgumentParser()
@@ -279,6 +280,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
 def create_mutations(dna, pam, mutant, complement=False):
     global gs
+    global guide_lib
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
     UPSTREAM = config.UP_ACIDS * 3
     DOWNSTREAM = config.DOWN_ACIDS * 3
@@ -287,11 +289,11 @@ def create_mutations(dna, pam, mutant, complement=False):
     guide = create_guides(dna, pam)
     
     # If using the guide library, automatically reject any guide not present in the library
-    #if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
-    #    if config.VERBOSE_EXECUTION:
-    #         print("Failed to find guide within guide library")
-    #     gs.failed_due_to_guide_library += 1
-    #     return None
+    if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
+        if config.VERBOSE_EXECUTION:
+             print("Failed to find guide within guide library")
+        gs.failed_due_to_guide_library += 1
+        return None
     
     # TODO
     
@@ -728,7 +730,9 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
 # Quickly moved the execution to its own function, for later use with a seperate driver (potentially, easy enough to revert if not)
 
 def execute_program():
-
+    
+    global guide_lib
+    
     # 1)  Choose the gene to mutate
     frontmatter, dna_list, guide_lib = get_dna()
     # At this stage, the dna is the full dna, buffer still included.
