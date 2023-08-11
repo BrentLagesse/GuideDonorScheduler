@@ -24,6 +24,7 @@ class MutationTracker:
     mutation_loc: int
     dna: str
     complement: bool
+    pam_location_in_gene: int
 
 @dataclass
 class GlobalStats:
@@ -446,7 +447,7 @@ def create_mutations(dna, pam, mutant, complement=False):
         candidate_dna = insert_extra_sequence(candidate_dna, guide)
         # we just added 52 + 20 (guide) basepairs
         #guide pam mutation mutationloc dna
-        result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement)
+        result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam)
         gs.succeeded += 1
         return result
     else:
@@ -529,7 +530,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
                 sheet1.write(i + column_pos, 1, mutation.mutation[0])
                 sheet1.write(i + column_pos, 2, mutation.mutation[1])
-                sheet1.write(i + column_pos, 3, mutation.pam) # Change to start of gene to location of mutation
+                sheet1.write(i + column_pos, 3, mutation.pam_location_in_gene + 3) # Note, make sure this is accurate!
                 sheet1.write(i + column_pos, 4, mutation.complement)
                 sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam + 3))) # +3 should make this the distance from the cut site
                 sheet1.write(i + column_pos, 6, "")
