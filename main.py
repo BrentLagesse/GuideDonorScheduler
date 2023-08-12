@@ -334,6 +334,13 @@ def create_mutations(dna, pam, mutant, complement=False):
     mutation_location = -1
     if (config.PRINT_MUTATION_CHECKS):
         print("Checking " + str(candidate_dna) + " for " + str(mutant[0]) + ".")
+        
+        
+    # Setting up for multiple potentials
+    
+    candidate_dnas = []
+    mutation_locations = []
+        
     #print(codons[mutant[0]])
     # // NOTE // 
     # https://cdn.discordapp.com/attachments/275221682808029184/1132258135306948752/image.png
@@ -353,9 +360,14 @@ def create_mutations(dna, pam, mutant, complement=False):
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if mutation_successful:
                 print("Found in " + str(candidate_first_amino_acid_loc))
-                candidate_dna = temp_candidate_dna
-                mutation_location = candidate_first_amino_acid_loc
-                break
+                #candidate_dna = temp_candidate_dna
+                #mutation_location = candidate_first_amino_acid_loc
+                #break
+                
+                # Instead of setting them once, am now pushing them onto the list
+                
+                candidate_dnas.append(temp_candidate_dna)
+                mutation_locations.append(candidate_first_amino_acid_loc)
     
     # Original, untouched code
     if False and first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
@@ -378,84 +390,96 @@ def create_mutations(dna, pam, mutant, complement=False):
     #    pass
 
 
-    if not mutation_successful:
+    #if not mutation_successful:
+    if len(candidate_dnas) == 0:
         if config.VERBOSE_EXECUTION:
             print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
         gs.failed_due_to_mutate += 1
         return None
 
     #if we wrote over the pam already, we are fine, I think
-    pam_loc_in_candidate = 76   # this is always true
-    if 'GG' in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate+3]):
-
-
-        # 2)  mutate pam
-        # figure out the pam amino acid situation (does it split, and if so where)
-        pam_case = (pam - config.GENE_START_BUFFER) % 3
-        mutation_successful = False
-        if pam == 1004:
-            pass
-        if pam_case == 0: # we only have a single amino acid
-            pam_string = dna[pam:pam+3]
-            pam_acid = string_to_acid[pam_string]
-            pam_mutant=[pam_acid, pam_acid]
-            mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant, mutation_location=mutation_location)
-            if not mutation_successful:
-                if config.VERBOSE_EXECUTION:
-                    print('Failed to find a valid replacement for the pam')
-                gs.failed_due_to_pam += 1
-                return None
+    
+    successful_mutations = []
+    
+    for i in range(len(candidate_dnas)):
+        candidate_dna = candidate_dnas[i]
+        mutation_location = mutation_locations[i]
+    
+        pam_loc_in_candidate = 76   # this is always true
+        if 'GG' in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate+3]):
+    
+    
+            # 2)  mutate pam
+            # figure out the pam amino acid situation (does it split, and if so where)
+            pam_case = (pam - config.GENE_START_BUFFER) % 3
+            mutation_successful = False
+            if pam == 1004:
+                pass
+            if pam_case == 0: # we only have a single amino acid
+                pam_string = dna[pam:pam+3]
+                pam_acid = string_to_acid[pam_string]
+                pam_mutant=[pam_acid, pam_acid]
+                mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant, mutation_location=mutation_location)
+                if not mutation_successful:
+                    if config.VERBOSE_EXECUTION:
+                        print('Failed to find a valid replacement for the pam')
+                    gs.failed_due_to_pam += 1
+                    return None
+            else:
+                if pam_case == 1:  # the N is in one acid and the GG is in another so we can only replace down
+        # TODO:  make sure we don't overwrite the mutation by removing the pam
+                    pam_string_up = None #dna[pam - 1:pam + 2]
+                    pam_string_down = dna[pam + 1:pam + 4]
+    
+                elif pam_case == 2:  # the NG is in one acid and the G is in another
+                    pam_string_up = dna[pam-1:pam+2]
+                    pam_string_down = dna[pam + 2:pam + 5]
+    
+                replaceable_pam = False
+                pam_mutant_up = None
+                if pam_string_up is not None and pam_string_up in string_to_acid:
+                    pam_acid_up = string_to_acid[pam_string_up]
+                    replaceable_pam = True
+                    pam_mutant_up = [pam_acid_up, pam_acid_up]
+                if pam_string_down in string_to_acid:
+                    pam_acid_down = string_to_acid[pam_string_down]
+                    replaceable_pam = True
+                    pam_mutant_down = [pam_acid_down, pam_acid_down]
+                if not replaceable_pam:
+                    return None
+                if pam_mutant_up is not None:
+                    mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up, mutation_location=mutation_location)
+                    if mutation_successful:
+                        candidate_dna = temp_candidate_dna
+                if not mutation_successful:   #try downstream if upstream didn't work
+                    mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down, mutation_location=mutation_location)
+                    if mutation_successful:
+                        candidate_dna = temp_candidate_dna
+    
+        if mutation_successful:
+            pam_loc = pam_loc_in_candidate
+            if False and complement:   # if we are on the reverse complement, invert it back before we add the other stuff
+                candidate_dna = invert_dna(candidate_dna)
+                guide = invert_dna(guide)
+                mutation_location = len(candidate_dna) - mutation_location
+                pam_loc = len(candidate_dna) - pam_loc
+            
+            candidate_dna = insert_extra_sequence(candidate_dna, guide)
+            # we just added 52 + 20 (guide) basepairs
+            #guide pam mutation mutationloc dna
+            result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam)
+            gs.succeeded += 1
+            successful_mutations.append(result)
         else:
-            if pam_case == 1:  # the N is in one acid and the GG is in another so we can only replace down
-    # TODO:  make sure we don't overwrite the mutation by removing the pam
-                pam_string_up = None #dna[pam - 1:pam + 2]
-                pam_string_down = dna[pam + 1:pam + 4]
-
-            elif pam_case == 2:  # the NG is in one acid and the G is in another
-                pam_string_up = dna[pam-1:pam+2]
-                pam_string_down = dna[pam + 2:pam + 5]
-
-            replaceable_pam = False
-            pam_mutant_up = None
-            if pam_string_up is not None and pam_string_up in string_to_acid:
-                pam_acid_up = string_to_acid[pam_string_up]
-                replaceable_pam = True
-                pam_mutant_up = [pam_acid_up, pam_acid_up]
-            if pam_string_down in string_to_acid:
-                pam_acid_down = string_to_acid[pam_string_down]
-                replaceable_pam = True
-                pam_mutant_down = [pam_acid_down, pam_acid_down]
-            if not replaceable_pam:
-                return None
-            if pam_mutant_up is not None:
-                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up, mutation_location=mutation_location)
-                if mutation_successful:
-                    candidate_dna = temp_candidate_dna
-            if not mutation_successful:   #try downstream if upstream didn't work
-                mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down, mutation_location=mutation_location)
-                if mutation_successful:
-                    candidate_dna = temp_candidate_dna
-
-    if mutation_successful:
-        pam_loc = pam_loc_in_candidate
-        if False and complement:   # if we are on the reverse complement, invert it back before we add the other stuff
-            candidate_dna = invert_dna(candidate_dna)
-            guide = invert_dna(guide)
-            mutation_location = len(candidate_dna) - mutation_location
-            pam_loc = len(candidate_dna) - pam_loc
+            if config.VERBOSE_EXECUTION:
+                print('Mutation failed due to pam')   #TODO:  output why
+            gs.failed_due_to_pam += 1
         
-        candidate_dna = insert_extra_sequence(candidate_dna, guide)
-        # we just added 52 + 20 (guide) basepairs
-        #guide pam mutation mutationloc dna
-        result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam)
-        gs.succeeded += 1
-        return result
-    else:
-        if config.VERBOSE_EXECUTION:
-            print('Mutation failed due to pam')   #TODO:  output why
-        gs.failed_due_to_pam += 1
+    if len(successful_mutations) == 0:
         return None
-
+    
+    else:
+        return successful_mutations
     # TODO:  Track the decisions we made in this method so we can output them
     # TODO:  Fix naming of the file and frontmatter
 
@@ -525,7 +549,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         
             cur_id = (str(frontmatter).partition(' ')[0])[1:]
            
-            
+            print(results) 
             for i,mutation in enumerate(results):
                 sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
                 sheet1.write(i + column_pos, 1, mutation.mutation[0])
@@ -701,7 +725,8 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
         for m in config.mutations_to_attempt.items():
             mutated_dna = create_mutations(_dna, loc, m)
             if mutated_dna is not None:
-                mutations_output.append(mutated_dna)
+                for md in mutated_dna:
+                    mutations_output.append(md)
     
     
     #class MutationTracker:
@@ -724,7 +749,8 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
                 #inv_mutated_dna = MutationTracker(inv_guide, inv_pam, mutated_dna.mutation, inv_mutation_loc, inv_dna)
                 #all_mutations.append(inv_mutated_dna)
     
-                mutations_output.append(mutated_dna)
+                for md in mutated_dna:
+                    mutations_output.append(md)
                 
     return mutations_output
 
