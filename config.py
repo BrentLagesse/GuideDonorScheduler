@@ -27,7 +27,7 @@ mutations_to_attempt['*'] = 'trp'
 
 GUIDE_LIBRARY_OUTPUT_FILE = 'Guide_Library_Output'
 GUIDE_LIBRARY_INPUT_FILE = 'Guide_Library_Input'
-USE_GUIDE_LIBRARY = True
+USE_GUIDE_LIBRARY = False
 
 GUIDE_LIBRARY_EOF = "END"
 
@@ -144,11 +144,11 @@ stop = ['TAA', 'TAG', 'TGA']
 #
 # ----------------------------------------------------
 
-RUN_UNIT_TESTS = True
-VERBOSE_TESTING = True # Prints progress of unit testing
+RUN_UNIT_TESTS = False
+VERBOSE_TESTING = False # Prints progress of unit testing
 VERBOSE_EXECUTION = False # Prints progress of main program
-PRINT_MUTATION_SUCCESS_COUNTS = True # Print success vs failed mutations after execution
-PRINT_MUTATION_CHECKS = True
+PRINT_MUTATION_SUCCESS_COUNTS = False # Print success vs failed mutations after execution
+PRINT_MUTATION_CHECKS = False
 
 
 # NOTES

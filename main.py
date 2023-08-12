@@ -204,7 +204,8 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             return True, candidate_dna
         return False, None
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc+3]
-    print(amino_acid_str)
+    if config.PRINT_MUTATION_CHECKS:
+        print(amino_acid_str)
     if amino_acid_str in string_to_acid:   # if this is something that isn't an amino acid, just quit
         amino_acid = string_to_acid[amino_acid_str]
     else:
@@ -216,7 +217,10 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             if config.VERBOSE_EXECUTION:
                 print('Somehow we ran into something that was not an amino acid: ' + amino_acid_str)
             return False, None
-    print("Currently checking " + str(amino_acid) + " for " + str(mutant[0]) + ".")
+        
+    if config.PRINT_MUTATION_CHECKS:
+        print("Currently checking " + str(amino_acid) + " for " + str(mutant[0]) + ".")
+        
     if mutant[0] == amino_acid or mutant[0] == '*':  # we found our target, lets make the swap!
         if mutant[0] == '*' and mutant[1] == '*':
             valid_mutations = codons[amino_acid]   # choose a silent mutation for whatever we are looking at
@@ -275,6 +279,10 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
     return False, None
 
 
+# NOTE FOR CREATE_MUTATIONS!!
+# I think I found a bug- once a mutation is identified, it is attempted. Successful
+# or not, I believe the guide is no longer used again, not searching for other candidates
+# with the same guide, or trying again upon a pam mutation failure.
 
 #THis method will return a full dna string for each mutation as part of a MutationTracker type
 #pam is the location of the first character of the pam
@@ -295,16 +303,6 @@ def create_mutations(dna, pam, mutant, complement=False):
              print("Failed to find guide within guide library")
         gs.failed_due_to_guide_library += 1
         return None
-    
-    # TODO
-    
-    # NOTE \\ TEMPORARILY DISABLED
-    # Gonna rewrite this later, plan is:
-        
-    # Get all possible mutations and guides
-    # If using library, then go through and eliminate unwanted guides
-    # Finally go through and eliminate/rank guides by priority
-    
     
     # If we are on the reverse compliment, invert the guide // NOTE this might not work yet
 #    if (complement):
@@ -334,7 +332,7 @@ def create_mutations(dna, pam, mutant, complement=False):
     #candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
     mutation_successful = False
     mutation_location = -1
-    if (config.VERBOSE_EXECUTION):
+    if (config.PRINT_MUTATION_CHECKS):
         print("Checking " + str(candidate_dna) + " for " + str(mutant[0]) + ".")
     #print(codons[mutant[0]])
     # // NOTE // 
@@ -348,11 +346,13 @@ def create_mutations(dna, pam, mutant, complement=False):
             #convert first_amino_acid_loc from global dna to candidate dna
             #candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
             candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+            print("Checking " + str(candidate_first_amino_acid_loc))
             if (config.PRINT_MUTATION_CHECKS):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if mutation_successful:
+                print("Found in " + str(candidate_first_amino_acid_loc))
                 candidate_dna = temp_candidate_dna
                 mutation_location = candidate_first_amino_acid_loc
                 break
