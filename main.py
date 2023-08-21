@@ -368,26 +368,21 @@ def create_mutations(dna, pam, mutant, complement=False):
                 
                 candidate_dnas.append(temp_candidate_dna)
                 mutation_locations.append(candidate_first_amino_acid_loc)
-    
-    # Original, untouched code
-    if False and first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
-        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
-            if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
-                continue
+
+    if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # only do downstream if we are still in the gene
+        for i in range(0, DOWNSTREAM, 3):    # check upstream, then check downstream
             #convert first_amino_acid_loc from global dna to candidate dna
-            candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+            #candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+            candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+            print("Checking " + str(candidate_first_amino_acid_loc))
+            if (config.PRINT_MUTATION_CHECKS):
+                print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if mutation_successful:
-                candidate_dna = temp_candidate_dna
-                mutation_location = candidate_first_amino_acid_loc
-                break
-
-    if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # only do downstream if we are still in the gene
-        pass
-    #TODO:  Implement downstream
-    #for i in range(0, DOWNSTREAM, 3):
-    #    pass
+                print("Found in " + str(candidate_first_amino_acid_loc))
+                candidate_dnas.append(temp_candidate_dna)
+                mutation_locations.append(candidate_first_amino_acid_loc)
 
 
     #if not mutation_successful:
@@ -548,8 +543,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
             dna = dna_list[g]
         
             cur_id = (str(frontmatter).partition(' ')[0])[1:]
-           
-            print(results) 
+
             for i,mutation in enumerate(results):
                 sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
                 sheet1.write(i + column_pos, 1, mutation.mutation[0])
