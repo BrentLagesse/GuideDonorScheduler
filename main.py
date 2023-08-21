@@ -369,11 +369,12 @@ def create_mutations(dna, pam, mutant, complement=False):
                 candidate_dnas.append(temp_candidate_dna)
                 mutation_locations.append(candidate_first_amino_acid_loc)
 
-    if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # only do downstream if we are still in the gene
+    #if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # Original version before my tweak
+    if candidate_end < (len(dna) - config.GENE_END_BUFFER):   # only do downstream if we are still in the gene
         for i in range(0, DOWNSTREAM, 3):    # check upstream, then check downstream
             #convert first_amino_acid_loc from global dna to candidate dna
             #candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
-            candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+            candidate_first_amino_acid_loc = first_amino_acid_loc + UPSTREAM + i - candidate_start
             print("Checking " + str(candidate_first_amino_acid_loc))
             if (config.PRINT_MUTATION_CHECKS):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
