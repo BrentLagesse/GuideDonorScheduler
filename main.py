@@ -277,13 +277,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
     if config.VERBOSE_EXECUTION:
         print('Mutant was not desireable')
     return False, None
-
-
-# NOTE FOR CREATE_MUTATIONS!!
-# I think I found a bug- once a mutation is identified, it is attempted. Successful
-# or not, I believe the guide is no longer used again, not searching for other candidates
-# with the same guide, or trying again upon a pam mutation failure.
-
+    
 #THis method will return a full dna string for each mutation as part of a MutationTracker type
 #pam is the location of the first character of the pam
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
@@ -291,7 +285,7 @@ def create_mutations(dna, pam, mutant, complement=False):
     global gs
     global guide_lib
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
-    UPSTREAM = config.UP_ACIDS * 3
+    UPSTREAM = (config.UP_ACIDS + 2) * 3
     DOWNSTREAM = config.DOWN_ACIDS * 3
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
@@ -341,25 +335,19 @@ def create_mutations(dna, pam, mutant, complement=False):
     candidate_dnas = []
     mutation_locations = []
         
-    #print(codons[mutant[0]])
-    # // NOTE // 
-    # https://cdn.discordapp.com/attachments/275221682808029184/1132258135306948752/image.png
-    # Screenshot, I believe this may have to do with the error- the desired acid is present in the candidate dna, but is not selected for mutation. I could be misreading/understanding/representing
-    # the data however, so further investigation is needed.
     if first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
+#        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
         for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
             if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
                 continue
             #convert first_amino_acid_loc from global dna to candidate dna
             #candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
             candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
-            print("Checking " + str(candidate_first_amino_acid_loc))
             if (config.PRINT_MUTATION_CHECKS):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if mutation_successful:
-                print("Found in " + str(candidate_first_amino_acid_loc))
                 #candidate_dna = temp_candidate_dna
                 #mutation_location = candidate_first_amino_acid_loc
                 #break
@@ -375,13 +363,11 @@ def create_mutations(dna, pam, mutant, complement=False):
             #convert first_amino_acid_loc from global dna to candidate dna
             #candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
             candidate_first_amino_acid_loc = first_amino_acid_loc + UPSTREAM + i - candidate_start
-            print("Checking " + str(candidate_first_amino_acid_loc))
             if (config.PRINT_MUTATION_CHECKS):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if mutation_successful:
-                print("Found in " + str(candidate_first_amino_acid_loc))
                 candidate_dnas.append(temp_candidate_dna)
                 mutation_locations.append(candidate_first_amino_acid_loc)
 
