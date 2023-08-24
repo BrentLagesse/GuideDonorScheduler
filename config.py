@@ -68,6 +68,8 @@ QUIT_ON_NO_DATA = True
 
 PRINT_MUTATION_RESULTS = True
 PRINT_GUIDE_LIBRARY = True
+
+KILL_MUTATION_ID_SUFFIX = 'KILL_GUIDE'
 # Add collumn to guide library output of just guide, just one,
 # prefer GATC-guide
 # Add priority collumn, automatically rank the guides in based on their priority
