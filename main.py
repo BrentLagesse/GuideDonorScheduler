@@ -188,7 +188,15 @@ def filter_guides( _guide_list ):
 # Returns the earliest possible guide modified with an end codon to kill the protein
 def create_kill_guide( mutation_tracker_to_modify ):
     
-    return mutation_tracker_to_modify
+    m = mutation_tracker_to_modify
+    m2 = MutationTracker(m.guide, m.pam, m.mutation, m.mutation_loc, m.dna, m.complement, m.pam_location_in_gene)
+    
+    m2.mutation = config.KILL_MUTATION
+    m2.dna = str(m.dna[:m.mutation_loc]) + str(config.KILL_MUTATION[1]) + str(m.dna[m.mutation_loc + 3:])
+    
+    
+    
+    return m2
     
 # Returns if the given guide is held within the guide library
 def is_guide_in_library(guide, guide_library):
@@ -751,6 +759,9 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
 
 # Quickly moved the execution to its own function, for later use with a seperate driver (potentially, easy enough to revert if not)
 
+# REMOVE LATER, for debug only
+debug_tracker = '';
+
 def execute_program():
     
     global guide_lib
@@ -780,6 +791,9 @@ def execute_program():
         
         # NOTE // Kill guide is inserted as the very last one
         all_mutations.append(create_kill_guide(all_mutations[0]))
+        
+        global debug_tracker
+        debug_tracker = create_kill_guide(all_mutations[0])
         
         combined_mutation_page.append(all_mutations)
         # at this point, we have everything we need to output the results

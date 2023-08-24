@@ -16,9 +16,7 @@ mutations_to_attempt = dict()
 #mutations_to_attempt['val'] = 'ile'
 mutations_to_attempt['*'] = 'trp'
 
-# Kill mutation
-KILL_MUTATION = dict()
-KILL_MUTATION['*'] = 'taa'
+
 
 # ----------------------------------------------------
 #
@@ -143,6 +141,9 @@ trp = ['TGG']
 arg = ['AGA', 'CGC', 'CGA', 'CGG', 'CGT', 'AGG']
 gly = ['GGT', 'GGC', 'GGA', 'GGG']
 stop = ['TAA', 'TAG', 'TGA']
+
+# Kill mutation
+KILL_MUTATION = ['*', stop[0]]
 
 # ----------------------------------------------------
 #
