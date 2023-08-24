@@ -179,6 +179,17 @@ def create_guides(dna, loc):
     
     return dna[loc-20:loc]
 
+
+# Returns a list of guides subtracting all duplicates, leaving guides of either highest priority, or the first instance of a gene
+def filter_guides( _guide_list ):
+    # TODO
+    return _guide_list
+
+# Returns the earliest possible guide modified with an end codon to kill the protein
+def create_kill_guide( mutation_tracker_to_modify ):
+    
+    return mutation_tracker_to_modify
+    
 # Returns if the given guide is held within the guide library
 def is_guide_in_library(guide, guide_library):
     
@@ -476,7 +487,7 @@ def invert_dna(dna):
 #print(invert_dna('GACCGTGCGACTGGGCGTCTCGGATCTAAGCTTTTGAATATTCCCTGTTTGAAGAGCATACGCTCTTCTTCTAACTTGATAAAATAAATATCCAGTCTGATAAATTGACAAGCTCAATTAAATCCAGAAAGCTGAAAGCTGAGGGAATATTCAAAAGCTTACTGGATACGTTGAGGCAATACGATTCGTCGATACAAAATTTAAACATCGAGACGTGTCCCTGCCTTGCG'))
 
 # Now expect all of these to be arrays.
-def write_results(frontmatter_list, results_list, dna_list, use_output_file = True):
+def write_results(frontmatter_list, results_list, dna_list, stop_guides, use_output_file = True):
     # use_output_file determines if the output in config will be used, or
     # if a title will automatically be generated from the frontmatter
 
@@ -746,6 +757,7 @@ def execute_program():
     # At this stage, the dna is the full dna, buffer still included.
     
     combined_mutation_page = []
+    stop_guides = []
     
     for i in range(0,len(dna_list)):
         dna = dna_list[i]
@@ -757,13 +769,20 @@ def execute_program():
         dna_locs = pams[0]
         inv_dna_locs = pams[1]
         
+        if (len(dna_locs) > 0): # Make sure there actually are pams to use
+            candidate_start = int(dna_locs[0]) - 10 - 66 #pam - UPSTREAM
+            candidate_end = int(dna_locs[0]) - 10 + 66 #pam + 3 + DOWNSTREAM
+            candidate_dna = dna[candidate_start:candidate_end]
+            stop_guides.append(create_kill_guide(candidate_dna, dna_locs[0]))
+            print(stop_guides)
+        
         all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
         combined_mutation_page.append(all_mutations)
         # at this point, we have everything we need to output the results
         if not config.OUTPUT_TO_ONE_FILE:
-            write_results([frontmatter[i]], [all_mutations], [dna], False)
+            write_results([frontmatter[i]], [all_mutations], [dna], [stop_guides], False)
     
     if config.OUTPUT_TO_ONE_FILE:
-        write_results(frontmatter, combined_mutation_page, dna_list)
+        write_results(frontmatter, combined_mutation_page, dna_list, stop_guides)
 
 execute_program()
