@@ -649,6 +649,9 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 sheet2.write(i + column_pos, 0, cur_id)
                 sheet2.write(i + column_pos, 1, cur_id + "_" + str(i))
                 
+                # Temp priority system for testing
+                sheet2.write(i + column_pos, 4, i)
+                
                 guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
                 inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)  
              
