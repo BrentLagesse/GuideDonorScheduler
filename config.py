@@ -29,7 +29,7 @@ mutations_to_attempt['*'] = 'trp'
 
 GUIDE_LIBRARY_OUTPUT_FILE = 'Guide_Library_Output'
 GUIDE_LIBRARY_INPUT_FILE = 'Guide_Library_Input'
-USE_GUIDE_LIBRARY = False
+USE_GUIDE_LIBRARY = True
 
 GUIDE_LIBRARY_EOF = "END"
 

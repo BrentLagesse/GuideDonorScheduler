@@ -35,8 +35,8 @@ class GlobalStats:
 
 @dataclass
 class PrebuiltGuide:
-    id: str
     gene: str
+    id: str
     guide: str
     priority: float
     compliment: bool
@@ -183,7 +183,26 @@ def create_guides(dna, loc):
 # Returns a list of guides subtracting all duplicates, leaving guides of either highest priority, or the first instance of a gene
 def filter_guides( _guide_list ):
     # TODO
-    return _guide_list
+    _return_list = []
+    
+    for guide_lib_object in _guide_list:
+    
+        ind = -1
+        for i in range(len(_return_list)):
+            glo = _return_list[i]
+            if glo.guide == guide_lib_object.guide and glo.gene == guide_lib_object.gene:
+                ind = i
+                
+                continue
+        
+        if ind != -1:
+            glo = _return_list[ind]
+            if guide_lib_object.priority > glo.priority:
+                _return_list[ind] = guide_lib_object
+        else:
+            _return_list.append(guide_lib_object)
+    print(_return_list)
+    return _return_list
 
 # Returns the earliest possible guide modified with an end codon to kill the protein
 def create_kill_guide( mutation_tracker_to_modify ):
@@ -773,6 +792,8 @@ def execute_program():
     frontmatter, dna_list, guide_lib = get_dna()
     # At this stage, the dna is the full dna, buffer still included.
     
+    if config.USE_GUIDE_LIBRARY:
+        filter_guides(guide_lib)
     combined_mutation_page = []
     
     for i in range(0,len(dna_list)):
