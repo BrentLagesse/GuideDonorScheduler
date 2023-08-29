@@ -38,6 +38,7 @@ class PrebuiltGuide:
     gene: str
     id: str
     guide: str
+    mutation_loc : int
     priority: float
     compliment: bool
 
@@ -148,12 +149,14 @@ def get_dna():
             entry = PrebuiltGuide(  cur,
                                     worksheet.cell_value(i, 1),
                                     worksheet.cell_value(i, 2), 
-                                    worksheet.cell_value(i, 4), 
+                                    worksheet.cell_value(i, 3), 
+                                    worksheet.cell_value(i, 5), 
                                     False )
             entry_inv = PrebuiltGuide(  cur,
                                     worksheet.cell_value(i, 1),
+                                    worksheet.cell_value(i, 4), 
                                     worksheet.cell_value(i, 3), 
-                                    worksheet.cell_value(i, 5), 
+                                    worksheet.cell_value(i, 6), 
                                     True )
             
             guide_data.append(entry)
@@ -641,11 +644,12 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         sheet2.write(column_pos, 0, 'GENE ID')
         sheet2.write(column_pos, 1, 'GUIDE ID')
         sheet2.write(column_pos, 2, 'GUIDE')
-        sheet2.write(column_pos, 3, 'INVERSE COMPLIMENT')
-        sheet2.write(column_pos, 4, 'GUIDE PRIORITY')
-        sheet2.write(column_pos, 5, 'INVERSE COMPLIMENT PRIORITY')
-        sheet2.write(column_pos, 6, 'GUIDE WITH HEADER')
-        sheet2.write(column_pos, 7, 'INVERSE COMPLIMENT WITH HEADER')
+        sheet2.write(column_pos, 3, 'MUTATION POSITION')
+        sheet2.write(column_pos, 4, 'INVERSE COMPLIMENT')
+        sheet2.write(column_pos, 5, 'GUIDE PRIORITY')
+        sheet2.write(column_pos, 6, 'INVERSE COMPLIMENT PRIORITY')
+        sheet2.write(column_pos, 7, 'GUIDE WITH HEADER')
+        sheet2.write(column_pos, 8, 'INVERSE COMPLIMENT WITH HEADER')
         
         column_pos += 2
     
@@ -667,9 +671,10 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
             for i,mutation in enumerate(results):
                 sheet2.write(i + column_pos, 0, cur_id)
                 sheet2.write(i + column_pos, 1, cur_id + "_" + str(i))
+                sheet2.write(i + column_pos, 3, mutation.mutation_loc)
                 
                 # Temp priority system for testing
-                sheet2.write(i + column_pos, 4, i)
+                sheet2.write(i + column_pos, 5, i)
                 
                 guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)   
                 inv_guide = (invert_dna(mutation.dna[len(first):len(first)+config.GUIDE_LENGTH]), guide_font)  
@@ -680,22 +685,22 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 if mutation.mutation_loc < mutation.pam:  #upstream mutation
                     _prefix = (prefix, dna_font)
                     sheet2.write_rich_text(i + column_pos, 2, (_blank, guide))
-                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, guide))
+                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, guide))
                     guides.append(_prefix[0]+guide[0])
                         
                     _prefix = (inv_prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 3, (_blank, inv_guide))
-                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 4, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 8, (_prefix, inv_guide))
                     inv_guides.append(_prefix[0]+inv_guide[0])
                 else:    #downstream mutation
                     _prefix = (inv_prefix, dna_font)
                     sheet2.write_rich_text(i + column_pos, 2, (_blank, guide))
-                    sheet2.write_rich_text(i + column_pos, 6, (_prefix, guide))
+                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, guide))
                     inv_guides.append(_prefix[0]+guide[0])
                     
                     _prefix = (prefix, dna_font)
-                    sheet2.write_rich_text(i + column_pos, 3, (_blank, inv_guide))
-                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 4, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 8, (_prefix, inv_guide))
                     guides.append(_prefix[0]+inv_guide[0])
                     
             column_pos += i + 2
