@@ -188,6 +188,8 @@ def filter_guides( _guide_list ):
     # TODO
     _return_list = []
     
+    print("Filtering guide library guides.")
+    print("Original Count: " + str(len(_guide_list)))
     for guide_lib_object in _guide_list:
     
         ind = -1
@@ -204,7 +206,7 @@ def filter_guides( _guide_list ):
                 _return_list[ind] = guide_lib_object
         else:
             _return_list.append(guide_lib_object)
-    print(_return_list)
+    print("New Count: " + str(len(_return_list)))
     return _return_list
 
 # Returns the earliest possible guide modified with an end codon to kill the protein
@@ -226,6 +228,15 @@ def is_guide_in_library(guide, guide_library):
     for guide_entry in guide_library:
         if guide_entry.guide == guide:
             return True
+    return False
+    
+# Returns if the given mutation tracker is allowed
+def is_mutation_permitted(guide, tracker, guide_library):
+    
+    for guide_entry in guide_library:
+        if guide_entry.guide == guide:
+            if int(guide_entry.mutation_loc) == int(tracker.mutation_loc):
+                return True
     return False
 
 # Combines the candidate dna with the guide, as well as the extra sequences defined within config
@@ -491,8 +502,15 @@ def create_mutations(dna, pam, mutant, complement=False):
             # we just added 52 + 20 (guide) basepairs
             #guide pam mutation mutationloc dna
             result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam)
-            gs.succeeded += 1
-            successful_mutations.append(result)
+            
+            # If using the guide library and only allowing one mutation per guide, automatically reject any guide not present in the library
+            if (config.USE_GUIDE_LIBRARY and config.ONE_MUTATION_PER_GUIDE and not (is_mutation_permitted(guide, result, guide_lib))):
+                if config.VERBOSE_EXECUTION:
+                     print("Mutation not permitted from guide library")
+                gs.failed_due_to_guide_library += 1
+            else:
+                gs.succeeded += 1
+                successful_mutations.append(result)
         else:
             if config.VERBOSE_EXECUTION:
                 print('Mutation failed due to pam')   #TODO:  output why
@@ -786,9 +804,6 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
 
 # Quickly moved the execution to its own function, for later use with a seperate driver (potentially, easy enough to revert if not)
 
-# REMOVE LATER, for debug only
-debug_tracker = '';
-
 def execute_program():
     
     global guide_lib
@@ -798,7 +813,7 @@ def execute_program():
     # At this stage, the dna is the full dna, buffer still included.
     
     if config.USE_GUIDE_LIBRARY:
-        filter_guides(guide_lib)
+        guide_lib = filter_guides(guide_lib)
     combined_mutation_page = []
     
     for i in range(0,len(dna_list)):
@@ -819,10 +834,8 @@ def execute_program():
         all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
         
         # NOTE // Kill guide is inserted as the very last one
-        all_mutations.append(create_kill_guide(all_mutations[0]))
-        
-        global debug_tracker
-        debug_tracker = create_kill_guide(all_mutations[0])
+        if (len(all_mutations) > 0):
+            all_mutations.append(create_kill_guide(all_mutations[0]))
         
         combined_mutation_page.append(all_mutations)
         # at this point, we have everything we need to output the results
