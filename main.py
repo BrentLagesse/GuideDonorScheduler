@@ -589,7 +589,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
             dna = dna_list[g]
         
             cur_id = (str(frontmatter).partition(' ')[0])[1:]
-
             for i,mutation in enumerate(results):
                 if (i == len(results)-1):
                     sheet1.write(i + column_pos, 0, cur_id + "_" + config.KILL_MUTATION_ID_SUFFIX)                    
