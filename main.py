@@ -490,19 +490,17 @@ def create_mutations(dna, pam, mutant, complement=False):
                         candidate_dna = temp_candidate_dna
     
         if mutation_successful:
-            mutant_insertion = mutant
             pam_loc = pam_loc_in_candidate
             if complement:   # if we are on the reverse complement, invert it back before we add the other stuff
                 candidate_dna = invert_dna(candidate_dna)
                 guide = invert_dna(guide)
                 mutation_location = len(candidate_dna) - mutation_location
                 pam_loc = len(candidate_dna) - pam_loc
-                mutant_insertion = invert_dna(mutant_insertion)
             
             candidate_dna = insert_extra_sequence(candidate_dna, guide)
             # we just added 52 + 20 (guide) basepairs
             #guide pam mutation mutationloc dna
-            result = MutationTracker(0, pam_loc + 72, mutant_insertion, mutation_location + 72, candidate_dna, complement, pam)
+            result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam)
             
             # If using the guide library and only allowing one mutation per guide, automatically reject any guide not present in the library
             if (config.USE_GUIDE_LIBRARY and config.ONE_MUTATION_PER_GUIDE and not (is_mutation_permitted(guide, result, guide_lib))):
@@ -607,7 +605,10 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 seg_first = (mutation.dna[0:len(first)], extra_font)
                 seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
                 seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
-                seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
+                if mutation.complement:
+                    seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
+                else:
+                    seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
                 seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
                 seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
                 
