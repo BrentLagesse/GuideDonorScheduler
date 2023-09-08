@@ -605,10 +605,14 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 seg_first = (mutation.dna[0:len(first)], extra_font)
                 seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
                 seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
+                
                 if mutation.complement:
-                    seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
+                    #seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
+                    seg_mutation = ('LOL', mutation_font)
                 else:
                     seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
+
+
                 seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
                 seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
                 
