@@ -85,6 +85,7 @@ invert_mapping['T'] = 'A'
 invert_mapping['A'] = 'T'
 invert_mapping['G'] = 'C'
 invert_mapping['C'] = 'G'
+invert_mapping['Z'] = 'Z' # FOR DEBUG
 
 
 string_to_acid = dict()
@@ -314,6 +315,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             # we are safe to make a swap here
             if replaceable:
                 candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc+3:]
+                candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[first_amino_acid_loc+3:]
                 return True, candidate_dna
         if not replaceable:
             if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
@@ -607,8 +609,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
                 
                 if mutation.complement:
-                    #seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
-                    seg_mutation = ('LOL', mutation_font)
+                    seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
                 else:
                     seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
 
