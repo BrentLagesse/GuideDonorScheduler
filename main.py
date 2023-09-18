@@ -854,4 +854,43 @@ def execute_program():
     if config.OUTPUT_TO_ONE_FILE:
         write_results(frontmatter, combined_mutation_page, dna_list)
 
-execute_program()
+
+def test_execution():
+    
+    global guide_lib
+    
+    # 1)  Choose the gene to mutate
+    frontmatter, dna_list, guide_lib = get_dna()
+    # At this stage, the dna is the full dna, buffer still included.
+    
+    if config.USE_GUIDE_LIBRARY:
+        guide_lib = filter_guides(guide_lib)
+    combined_mutation_page = []
+
+    dna = dna_list[0]
+    inv_dna_full = invert_dna(dna)
+    print(inv_dna_full)
+    # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
+    #  This function finds all the pams
+    
+    pams = get_locations(dna) # Returns pams from both regular strand and inverse compliment
+    dna_locs = pams[0][0]
+    inv_dna_locs = pams[1][0]
+    
+    candidate_start = dna_locs - 10 - 66 #pam - UPSTREAM
+    candidate_end = dna_locs - 10 + 66 #pam + 3 + DOWNSTREAM
+    candidate_dna = dna[candidate_start:candidate_end]
+    
+    all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
+    
+    # NOTE // Kill guide is inserted as the very last one
+    if (len(all_mutations) > 0):
+        all_mutations.append(create_kill_guide(all_mutations[0]))
+    
+    combined_mutation_page.append(all_mutations)
+    # at this point, we have everything we need to output the results
+    write_results([frontmatter[0]], [all_mutations], [dna], False)
+
+
+#execute_program()
+test_execution()
