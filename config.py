@@ -158,6 +158,8 @@ VERBOSE_EXECUTION = False # Prints progress of main program
 PRINT_MUTATION_SUCCESS_COUNTS = True # Print success vs failed mutations after execution
 PRINT_MUTATION_CHECKS = False
 
+RUN_IN_EXECUTION_TESTING_MODE = True # Outputs only 1 mutation for debug purposes
+USE_DEBUG_MUTATION = True # Output ZZZ as mutation for debug purposes
 
 # NOTES
 # DNA - GUIDE ID - MUTATION ID

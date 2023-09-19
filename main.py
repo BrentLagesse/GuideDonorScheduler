@@ -314,8 +314,10 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 
             # we are safe to make a swap here
             if replaceable:
-                candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc+3:]
-                candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[first_amino_acid_loc+3:]
+                if not config.USE_DEBUG_MUTATION:
+                    candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc+3:]
+                else:
+                    candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[first_amino_acid_loc+3:]
                 return True, candidate_dna
         if not replaceable:
             if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
@@ -892,5 +894,7 @@ def test_execution():
     write_results([frontmatter[0]], [all_mutations], [dna], False)
 
 
-#execute_program()
-test_execution()
+if config.RUN_IN_EXECUTION_TESTING_MODE:
+    test_execution()
+else:
+    execute_program()
