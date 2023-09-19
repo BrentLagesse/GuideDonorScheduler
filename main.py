@@ -336,7 +336,9 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 #THis method will return a full dna string for each mutation as part of a MutationTracker type
 #pam is the location of the first character of the pam
 #mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
-def create_mutations(dna, pam, mutant, complement=False):
+
+# only_once is used for debug, only runs through one mutation
+def create_mutations(dna, pam, mutant, complement=False, only_once = False):
     global gs
     global guide_lib
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
@@ -408,9 +410,10 @@ def create_mutations(dna, pam, mutant, complement=False):
                 #break
                 
                 # Instead of setting them once, am now pushing them onto the list
-                
                 candidate_dnas.append(temp_candidate_dna)
                 mutation_locations.append(candidate_first_amino_acid_loc)
+                if only_once:
+                    break
 
     #if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # Original version before my tweak
     if candidate_end < (len(dna) - config.GENE_END_BUFFER):   # only do downstream if we are still in the gene
@@ -425,7 +428,8 @@ def create_mutations(dna, pam, mutant, complement=False):
             if mutation_successful:
                 candidate_dnas.append(temp_candidate_dna)
                 mutation_locations.append(candidate_first_amino_acid_loc)
-
+                if only_once:
+                    break
 
     #if not mutation_successful:
     if len(candidate_dnas) == 0:
@@ -771,7 +775,9 @@ def confirm_input_args():
         if (config.DEFAULT_OUT_FILE == None):
                 print("No default output file present.")
 
-def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
+def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once = False):
+    
+    _only_once = only_once
     
     mutations_output = []
     
@@ -781,7 +787,7 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
         #for g in guides:   # for each guide do each mutation
     
         for m in config.mutations_to_attempt.items():
-            mutated_dna = create_mutations(_dna, loc, m)
+            mutated_dna = create_mutations(_dna, loc, m, only_once = _only_once)
             if mutated_dna is not None:
                 for md in mutated_dna:
                     mutations_output.append(md)
@@ -796,7 +802,7 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna):
     
     for loc in _inv_dna_locs:
         for m in config.mutations_to_attempt.items():
-            mutated_dna = create_mutations(_inv_dna, loc, m, complement=True)  #returns a mutation tracker
+            mutated_dna = create_mutations(_inv_dna, loc, m, only_once = _only_once, complement=True)  #returns a mutation tracker
             if mutated_dna is not None:
                 #revert to original  -- Maybe we don't need to do this?
                 #inv_guide = mutated_dna.guide
@@ -882,14 +888,9 @@ def test_execution():
     candidate_start = dna_locs - 10 - 66 #pam - UPSTREAM
     candidate_end = dna_locs - 10 + 66 #pam + 3 + DOWNSTREAM
     candidate_dna = dna[candidate_start:candidate_end]
+    print(dna_locs)
+    all_mutations = get_all_mutations([dna_locs], [inv_dna_locs], dna, inv_dna_full, only_once = True)
     
-    all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
-    
-    # NOTE // Kill guide is inserted as the very last one
-    if (len(all_mutations) > 0):
-        all_mutations.append(create_kill_guide(all_mutations[0]))
-    
-    combined_mutation_page.append(all_mutations)
     # at this point, we have everything we need to output the results
     write_results([frontmatter[0]], [all_mutations], [dna], False)
 
