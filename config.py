@@ -55,8 +55,7 @@ MULTI_OUTPUT_PREFIX = "Mutation_Results_"
 
 QUIT_ON_NO_DATA = True
 
-# allow for multiple inputs // NOTE \\ 
-#
+# Program exits if no files are given
 
 
 # ----------------------------------------------------
@@ -158,8 +157,9 @@ VERBOSE_EXECUTION = False # Prints progress of main program
 PRINT_MUTATION_SUCCESS_COUNTS = True # Print success vs failed mutations after execution
 PRINT_MUTATION_CHECKS = False
 
-RUN_IN_EXECUTION_TESTING_MODE = True # Outputs only 1 mutation for debug purposes
-USE_DEBUG_MUTATION = True # Output ZZZ as mutation for debug purposes
+RUN_IN_EXECUTION_TESTING_MODE = False # Outputs only a few mutations for easier tracing and debug purposes
+USE_DEBUG_MUTATION = False # Output ZZZ as mutation for debug purposes
+TRACE_CANDIDATE_DNA_GENERATION = False # Print candidate DNA on each step of perform_mutation
 
 # NOTES
 # DNA - GUIDE ID - MUTATION ID

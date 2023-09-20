@@ -20,7 +20,7 @@ def test_finding_pams():
     dna = dna[0]
     
     inv_dna = main.invert_dna(dna)
-    locs = np.array(main.get_locations(dna));
+    locs = np.array(main.get_locations(dna), dtype=object);
     pams = []
     success = True
     for l in locs[0]:

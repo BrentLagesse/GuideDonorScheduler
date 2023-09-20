@@ -304,12 +304,12 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
                 #     if possible, I would like to avoid mutating the PAM to NAG.
             #    2. If you can’t mutate the PAM then mutate at least one location in the “seed” region (10 bases upstream of the PAM). The closer the silent mutation is to the PAM the better it works. We may decide that we want to do two silent mutations if we find that one in the seed region isn’t enough to prevent re-cutting.
 
-    #3. Oftentimes the mutation we intend to make will be in the seed.
-     #   a. If it is still possible to make a silent PAM mutation then that would be good (Although we are currently testing this and this parameter might change).
-      #  b. If there is no way to make a silent PAM mutation and the mutation is more than 5 bases away from the PAM then the next best thing would be to make a silent mutation within the 5 bases upstream of the PAM.
-       # c. If the mutation is within 5 bases from the PAM and you can’t make a silent PAM mutation, then I wouldn’t make any additional mutation.
-
-                # This is from when I thought we couldn't introduce a new GG
+        #3. Oftentimes the mutation we intend to make will be in the seed.
+         #   a. If it is still possible to make a silent PAM mutation then that would be good (Although we are currently testing this and this parameter might change).
+          #  b. If there is no way to make a silent PAM mutation and the mutation is more than 5 bases away from the PAM then the next best thing would be to make a silent mutation within the 5 bases upstream of the PAM.
+           # c. If the mutation is within 5 bases from the PAM and you can’t make a silent PAM mutation, then I wouldn’t make any additional mutation.
+    
+                    # This is from when I thought we couldn't introduce a new GG
 
 
             # we are safe to make a swap here
@@ -404,6 +404,9 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
+            if config.TRACE_CANDIDATE_DNA_GENERATION:
+                print("Candidate DNA:")
+                print(temp_candidate_dna)
             if mutation_successful:
                 #candidate_dna = temp_candidate_dna
                 #mutation_location = candidate_first_amino_acid_loc
@@ -425,6 +428,9 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
             mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
+            if config.TRACE_CANDIDATE_DNA_GENERATION:
+                print("Reverse:")
+                print(temp_candidate_dna)
             if mutation_successful:
                 candidate_dnas.append(temp_candidate_dna)
                 mutation_locations.append(candidate_first_amino_acid_loc)
@@ -461,6 +467,9 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
                 pam_acid = string_to_acid[pam_string]
                 pam_mutant=[pam_acid, pam_acid]
                 mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant, mutation_location=mutation_location)
+                if config.TRACE_CANDIDATE_DNA_GENERATION:
+                    print("PAM Candidate DNA:")
+                    print(temp_candidate_dna)
                 if not mutation_successful:
                     if config.VERBOSE_EXECUTION:
                         print('Failed to find a valid replacement for the pam')
@@ -490,9 +499,15 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
                     return None
                 if pam_mutant_up is not None:
                     mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up, mutation_location=mutation_location)
+                    if config.TRACE_CANDIDATE_DNA_GENERATION:
+                        print("PAM Candidate DNA 2:")
+                        print(temp_candidate_dna)
                     if mutation_successful:
                         candidate_dna = temp_candidate_dna
                 if not mutation_successful:   #try downstream if upstream didn't work
+                    if config.TRACE_CANDIDATE_DNA_GENERATION:
+                        print("PAM Candidate DNA 3:")
+                        print(temp_candidate_dna)
                     mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down, mutation_location=mutation_location)
                     if mutation_successful:
                         candidate_dna = temp_candidate_dna
@@ -594,10 +609,15 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
             frontmatter = frontmatter_list[g]
             results = results_list[g]
             dna = dna_list[g]
-        
+            
             cur_id = (str(frontmatter).partition(' ')[0])[1:]
             i = 0
             for i,mutation in enumerate(results):
+                
+                if config.TRACE_CANDIDATE_DNA_GENERATION:
+                    print("DNA during writing:")
+                    print(mutation.dna)
+                
                 if (i == len(results)-1):
                     sheet1.write(i + column_pos, 0, cur_id + "_" + config.KILL_MUTATION_ID_SUFFIX)                    
                 else:
@@ -835,7 +855,6 @@ def execute_program():
     for i in range(0,len(dna_list)):
         dna = dna_list[i]
         inv_dna_full = invert_dna(dna)
-        print(inv_dna_full)
         # 1b. Search for NGG (where N is any base, A, T, C, or G) (aka the PAM)
         #  This function finds all the pams
         
