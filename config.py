@@ -10,11 +10,11 @@ mutations_to_attempt = dict()
 
 
 #fake mutations for testing
-#mutations_to_attempt['met'] = 'val'
-#mutations_to_attempt['ala'] = 'tyr'
-#mutations_to_attempt['cys'] = 'thr'
-#mutations_to_attempt['val'] = 'ile'
-mutations_to_attempt['*'] = 'trp'
+mutations_to_attempt['met'] = 'val'
+mutations_to_attempt['ala'] = 'tyr'
+mutations_to_attempt['cys'] = 'thr'
+mutations_to_attempt['val'] = 'ile'
+#mutations_to_attempt['*'] = 'trp'
 
 
 
