@@ -10,11 +10,11 @@ mutations_to_attempt = dict()
 
 
 #fake mutations for testing
-#mutations_to_attempt['met'] = 'val'
-#mutations_to_attempt['ala'] = 'tyr'
-#mutations_to_attempt['cys'] = 'thr'
-#mutations_to_attempt['val'] = 'ile'
-mutations_to_attempt['*'] = 'trp'
+mutations_to_attempt['met'] = 'val'
+mutations_to_attempt['ala'] = 'tyr'
+mutations_to_attempt['cys'] = 'thr'
+mutations_to_attempt['val'] = 'ile'
+#mutations_to_attempt['*'] = 'trp'
 
 
 
@@ -158,7 +158,7 @@ PRINT_MUTATION_SUCCESS_COUNTS = True # Print success vs failed mutations after e
 PRINT_MUTATION_CHECKS = False
 
 RUN_IN_EXECUTION_TESTING_MODE = False # Outputs only a few mutations for easier tracing and debug purposes
-USE_DEBUG_MUTATION = True # Output ZZZ as mutation for debug purposes
+USE_DEBUG_MUTATION = False # Output ZZZ as mutation for debug purposes
 TRACE_CANDIDATE_DNA_GENERATION = False # Print candidate DNA on each step of perform_mutation
 
 # NOTES

@@ -370,6 +370,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
     # 2)  Find the amino acid you want to mutate
 
     first_amino_acid_loc = int()
+    origin = first_amino_acid_loc = pam - UPSTREAM
     for i in range(0, 3):    # We want to start on the first amino acid that is within our upstream range
         if (pam - UPSTREAM - config.GENE_START_BUFFER + i) % 3 == 0:
             first_amino_acid_loc = pam - UPSTREAM + i
@@ -377,8 +378,10 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
         first_amino_acid_loc += 3
     if first_amino_acid_loc > pam:   # if we can't get anything upstream, just start at the beginning of the gene
         first_amino_acid_loc = config.GENE_START_BUFFER
-
-    first_amino_acid_loc += 3 # Adding 3 to ignore the start codon
+    pam_modifier = origin - first_amino_acid_loc
+    pam -= pam_modifier
+    
+    #first_amino_acid_loc += 3 # Adding 3 to ignore the start codon
     
     #candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
     mutation_successful = False
@@ -392,7 +395,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
     candidate_dnas = []
     mutation_locations = []
         
-    if first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 3 < pam:   # only do upstream if we are still in the gene
+    if first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 6 < pam:   # only do upstream if we are still in the gene
 #        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
         for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
             if i + first_amino_acid_loc + 3 >= pam:   # don't go into the pam (TODO:  I think this is true)
@@ -517,8 +520,8 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
             if complement:   # if we are on the reverse complement, invert it back before we add the other stuff
                 candidate_dna = invert_dna(candidate_dna)
                 guide = invert_dna(guide)
-                mutation_location = len(candidate_dna) - mutation_location
-                pam_loc = len(candidate_dna) - pam_loc
+                mutation_location = len(candidate_dna) - mutation_location - 3
+                pam_loc = len(candidate_dna) - pam_loc - 3
             
             candidate_dna = insert_extra_sequence(candidate_dna, guide)
             # we just added 52 + 20 (guide) basepairs
