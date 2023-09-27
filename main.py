@@ -629,6 +629,12 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam + 3))) # +3 should make this the distance from the cut site
                 sheet1.write(i + column_pos, 6, "")
                 
+                                
+                if (mutation.complement):
+                    pass
+                    #mutation.dna = invert_dna(mutation.dna)
+                # Potentially reading positions (and donor) from non inverted gene, when it should be read from reverse compliment?
+                # Not fully sure, still gotta look into this // NOTE \\ 
                 
                 seg_first = (mutation.dna[0:len(first)], extra_font)
                 seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
@@ -639,14 +645,8 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 else:
                     seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
 
-
                 seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
                 seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
-                
-                if (mutation.complement):
-                    mutation.dna = invert_dna(mutation.dna)
-                # Potentially reading positions (and donor) from non inverted gene, when it should be read from reverse compliment?
-                # Not fully sure, still gotta look into this // NOTE \\ 
                 
                 if mutation.mutation_loc < mutation.pam:  #upstream mutation
                     seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
@@ -661,6 +661,13 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                     sheet1.write_rich_text(i + column_pos, 7, (
                     seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
                     
+                print(seg_mutation[0])
+                print(mutation.dna)
+                print(seg_first[0]+" "+seg_guide[0]+" "+seg_second[0]+" "+seg_pam[0]+" "+seg_third[0])
+                
+                print(mutation.dna[:mutation.pam]+" "+mutation.dna[mutation.pam:mutation.pam+3]+" "+mutation.dna[mutation.pam+3:])
+                print(mutation.dna[mutation.pam: mutation.pam+3])
+                print(seg_pam[0])
             
                 if (mutation.complement):
                     mutation.dna = invert_dna(mutation.dna)    
