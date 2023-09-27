@@ -383,8 +383,8 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
     pam_modifier = origin - first_amino_acid_loc
     #pam -= pam_modifier
     
-    print(dna[pam-20:pam+20])
-    print(dna[pam-20:pam] + " " + dna[pam:pam+3] + " " + dna[pam+3:pam+20] )
+    #print(dna[pam-20:pam+20])
+    #print(dna[pam-20:pam] + " " + dna[pam:pam+3] + " " + dna[pam+3:pam+20] )
     
     #first_amino_acid_loc += 3 # Adding 3 to ignore the start codon
     
