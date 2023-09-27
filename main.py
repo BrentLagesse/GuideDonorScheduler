@@ -378,8 +378,13 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
         first_amino_acid_loc += 3
     if first_amino_acid_loc > pam:   # if we can't get anything upstream, just start at the beginning of the gene
         first_amino_acid_loc = config.GENE_START_BUFFER
+        
+        
     pam_modifier = origin - first_amino_acid_loc
-    pam -= pam_modifier
+    #pam -= pam_modifier
+    
+    print(dna[pam-20:pam+20])
+    print(dna[pam-20:pam] + " " + dna[pam:pam+3] + " " + dna[pam+3:pam+20] )
     
     #first_amino_acid_loc += 3 # Adding 3 to ignore the start codon
     
@@ -664,13 +669,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                     sheet1.write_rich_text(i + column_pos, 7, (
                     seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
                     
-                print(seg_mutation[0])
-                print(mutation.dna)
-                print(seg_first[0]+" "+seg_guide[0]+" "+seg_second[0]+" "+seg_pam[0]+" "+seg_third[0])
-                
-                print(mutation.dna[:mutation.pam]+" "+mutation.dna[mutation.pam:mutation.pam+3]+" "+mutation.dna[mutation.pam+3:])
-                print(mutation.dna[mutation.pam: mutation.pam+3])
-                print(seg_pam[0])
             
                 if (mutation.complement):
                     mutation.dna = invert_dna(mutation.dna)    
