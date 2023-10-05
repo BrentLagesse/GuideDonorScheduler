@@ -25,6 +25,8 @@ class MutationTracker:
     dna: str
     complement: bool
     pam_location_in_gene: int
+    distance_from_pam: int
+    original_pam: str
 
 @dataclass
 class GlobalStats:
@@ -213,7 +215,7 @@ def filter_guides( _guide_list ):
 def create_kill_guide( mutation_tracker_to_modify ):
     
     m = mutation_tracker_to_modify
-    m2 = MutationTracker(m.guide, m.pam, m.mutation, m.mutation_loc, m.dna, m.complement, m.pam_location_in_gene)
+    m2 = MutationTracker(m.guide, m.pam, m.mutation, m.mutation_loc, m.dna, m.complement, m.pam_location_in_gene, 0, '')
     
     m2.mutation = config.KILL_MUTATION
     m2.dna = str(m.dna[:m.mutation_loc]) + str(config.KILL_MUTATION[1]) + str(m.dna[m.mutation_loc + 3:])
@@ -254,7 +256,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             if config.VERBOSE_EXECUTION:
                 print ('we did not mutate the pam because the mutation was withing 5 base pairs of pam')
             return True, candidate_dna
-        return False, None
+        return False, None, None
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc+3]
     if config.PRINT_MUTATION_CHECKS:
         print(amino_acid_str)
@@ -264,11 +266,11 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
         if amino_acid_str in config.stop:
             if config.VERBOSE_EXECUTION:
                 print('Ran into a stop codon: ' + amino_acid_str)
-            return False, None
+            return False, None, None
         else:
             if config.VERBOSE_EXECUTION:
                 print('Somehow we ran into something that was not an amino acid: ' + amino_acid_str)
-            return False, None
+            return False, None, None
         
     if config.PRINT_MUTATION_CHECKS:
         print("Currently checking " + str(amino_acid) + " for " + str(mutant[0]) + ".")
@@ -318,12 +320,12 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc+3:]
                 else:
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[first_amino_acid_loc+3:]
-                return True, candidate_dna
+                return True, candidate_dna, distance_from_pam
         if not replaceable:
             if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
                 if config.VERBOSE_EXECUTION:
                     print('Could not find a replacement in the seed')
-                return False, None
+                return False, None, None
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
             return perform_mutation(candidate_dna, first_amino_acid_loc - 3, 3, mutant,
@@ -331,7 +333,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
     
     if config.VERBOSE_EXECUTION:
         print('Mutant was not desireable')
-    return False, None
+    return False, None, None
     
 #THis method will return a full dna string for each mutation as part of a MutationTracker type
 #pam is the location of the first character of the pam
@@ -411,7 +413,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
             if (config.PRINT_MUTATION_CHECKS):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
-            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
+            mutation_successful, temp_candidate_dna, d_pam = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if config.TRACE_CANDIDATE_DNA_GENERATION:
                 print("Candidate DNA:")
                 print(temp_candidate_dna)
@@ -435,7 +437,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
             if (config.PRINT_MUTATION_CHECKS):
                 print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[candidate_first_amino_acid_loc:candidate_first_amino_acid_loc+3] + " | " + candidate_dna[candidate_first_amino_acid_loc+3:])
             # 2)  Actually perform the mutation
-            mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
+            mutation_successful, temp_candidate_dna, d_pam = perform_mutation(candidate_dna, candidate_first_amino_acid_loc, 0, mutant)
             if config.TRACE_CANDIDATE_DNA_GENERATION:
                 print("Reverse:")
                 print(temp_candidate_dna)
@@ -459,8 +461,9 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
     for i in range(len(candidate_dnas)):
         candidate_dna = candidate_dnas[i]
         mutation_location = mutation_locations[i]
-    
+
         pam_loc_in_candidate = 76   # this is always true
+        pam_string = dna[pam:pam + 3]
         if 'GG' in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate+3]):
     
     
@@ -470,11 +473,12 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
             mutation_successful = False
             if pam == 1004:
                 pass
+
             if pam_case == 0: # we only have a single amino acid
-                pam_string = dna[pam:pam+3]
+
                 pam_acid = string_to_acid[pam_string]
                 pam_mutant=[pam_acid, pam_acid]
-                mutation_successful, candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant, mutation_location=mutation_location)
+                mutation_successful, candidate_dna, d_pam = perform_mutation(candidate_dna, pam_loc_in_candidate, 0, pam_mutant, mutation_location=mutation_location)
                 if config.TRACE_CANDIDATE_DNA_GENERATION:
                     print("PAM Candidate DNA:")
                     print(temp_candidate_dna)
@@ -506,7 +510,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
                 if not replaceable_pam:
                     return None
                 if pam_mutant_up is not None:
-                    mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up, mutation_location=mutation_location)
+                    mutation_successful, temp_candidate_dna, d_pam = perform_mutation(candidate_dna, pam_loc_in_candidate - 1, pam_case, pam_mutant_up, mutation_location=mutation_location)
                     if config.TRACE_CANDIDATE_DNA_GENERATION:
                         print("PAM Candidate DNA 2:")
                         print(temp_candidate_dna)
@@ -516,7 +520,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
                     if config.TRACE_CANDIDATE_DNA_GENERATION:
                         print("PAM Candidate DNA 3:")
                         print(temp_candidate_dna)
-                    mutation_successful, temp_candidate_dna = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down, mutation_location=mutation_location)
+                    mutation_successful, temp_candidate_dna, d_pam = perform_mutation(candidate_dna, pam_loc_in_candidate + pam_case, pam_case, pam_mutant_down, mutation_location=mutation_location)
                     if mutation_successful:
                         candidate_dna = temp_candidate_dna
     
@@ -531,7 +535,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
             candidate_dna = insert_extra_sequence(candidate_dna, guide)
             # we just added 52 + 20 (guide) basepairs
             #guide pam mutation mutationloc dna
-            result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam)
+            result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam, d_pam, pam_string)
             
             # If using the guide library and only allowing one mutation per guide, automatically reject any guide not present in the library
             if (config.USE_GUIDE_LIBRARY and config.ONE_MUTATION_PER_GUIDE and not (is_mutation_permitted(guide, result, guide_lib))):
@@ -597,7 +601,8 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         sheet1.write(column_pos, 4, 'Reverse Complement')
         sheet1.write(column_pos, 5, 'Mutation Distance From Cut Site')
         sheet1.write(column_pos, 6, 'Original PAM')
-        sheet1.write(column_pos, 7, 'Result')
+        sheet1.write(column_pos, 7, 'Seed Mutation Distance From PAM')
+        sheet1.write(column_pos, 8, 'Result')
         
         column_pos += 2
     
@@ -635,8 +640,8 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 sheet1.write(i + column_pos, 3, mutation.pam_location_in_gene + 3) # Note, make sure this is accurate!
                 sheet1.write(i + column_pos, 4, mutation.complement)
                 sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam + 3))) # +3 should make this the distance from the cut site
-                sheet1.write(i + column_pos, 6, "")
-                
+                sheet1.write(i + column_pos, 6, mutation.original_pam)
+                sheet1.write(i + column_pos, 7, mutation.distance_from_pam)
                                 
                 if (mutation.complement):
                     pass
@@ -660,13 +665,13 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                     seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
                     seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
                     seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-                    sheet1.write_rich_text(i + column_pos, 7, (
+                    sheet1.write_rich_text(i + column_pos, 8, (
                     seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
                 else:    #downstream mutation
                     seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
                     seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
                     seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
-                    sheet1.write_rich_text(i + column_pos, 7, (
+                    sheet1.write_rich_text(i + column_pos, 8, (
                     seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
                     
             
