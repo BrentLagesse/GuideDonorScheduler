@@ -602,7 +602,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         sheet1.write(column_pos, 2, 'Mutation To')
         sheet1.write(column_pos, 3, 'Mutation Location')
         sheet1.write(column_pos, 4, 'Reverse Complement')
-        sheet1.write(column_pos, 5, 'Mutation Distance From Cut Site')
+        sheet1.write(column_pos, 5, 'Mutation Distance Start of PAM')
         sheet1.write(column_pos, 6, 'Original PAM')
         sheet1.write(column_pos, 7, 'Seed Mutation Distance From PAM')
         sheet1.write(column_pos, 8, 'Result')
@@ -640,9 +640,9 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                     sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
                 sheet1.write(i + column_pos, 1, mutation.mutation[0])
                 sheet1.write(i + column_pos, 2, mutation.mutation[1])
-                sheet1.write(i + column_pos, 3, mutation.pam_location_in_gene + 3) # Note, make sure this is accurate!
+                sheet1.write(i + column_pos, 3, mutation.pam_location_in_gene + (mutation.mutation_loc - mutation.pam ))
                 sheet1.write(i + column_pos, 4, mutation.complement)
-                sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam + 3))) # +3 should make this the distance from the cut site
+                sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam )))
                 sheet1.write(i + column_pos, 6, mutation.original_pam)
                 sheet1.write(i + column_pos, 7, mutation.distance_from_pam)
                                 
@@ -660,8 +660,10 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                     seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
                 else:
                     seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
-
-                seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
+                if mutation.pam < mutation.mutation_loc < mutation.pam + 3:   # we mutated the pam with the OG mutation.
+                    seg_pam = (mutation.dna[mutation.pam: mutation.pam+ (mutation.mutation_loc - mutation.pam)], pam_font)
+                else:
+                    seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
                 seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
                 
                 if mutation.mutation_loc < mutation.pam:  #upstream mutation
