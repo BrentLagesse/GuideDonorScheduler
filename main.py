@@ -466,7 +466,8 @@ def create_mutations(dna, pam, mutant, complement=False, only_once = False):
         mutation_location = mutation_locations[i]
 
         pam_loc_in_candidate = 76   # this is always true
-        pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
+        #pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
+        pam_string = dna[pam:pam+3]
         mutation_successful = False
         if 'GG' in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate+3]):
     
