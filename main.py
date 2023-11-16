@@ -615,6 +615,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         guide_font = xlwt.easyfont('color_index blue')
         pam_font = xlwt.easyfont('color_index green')
         dna_font = xlwt.easyfont('color_index black')
+        pam_mut_font = xlwt.easyfont('color_index orange')
     
         first = config.first_sequence
         second = config.second_sequence
@@ -655,29 +656,70 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 seg_first = (mutation.dna[0:len(first)], extra_font)
                 seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
                 seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
+
+
                 
                 if mutation.complement:
                     seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
                 else:
                     seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
+
+                mutation.distance_from_pam  # this is how far away from the pam we did the mutation
+                mode = mutation.pam_location_in_gene % 3 # this is which "mode" we were in, it gives us the offset from pam start
+                pam_mut_seg = None
+                if mutation.distance_from_pam is not None:   # None means the mutation took care of the pam for us
+                    start_of_pam_mutation = mutation.pam + mode - mutation.distance_from_pam
+                    pam_mut_seg = (mutation.dna[start_of_pam_mutation:start_of_pam_mutation+3], pam_mut_font)
+                mod_dna2 = 0   #how much we need to remove from dna 2 because of pam mut
+                mod_dna3 = 0   #how much we need to remove from dna 3 because of pam mut
+                #this is a little hacky, but figure out the ordering of if the mut or pam goes first
+                blank  = ('', pam_font)
                 if mutation.pam < mutation.mutation_loc < mutation.pam + 3:   # we mutated the pam with the OG mutation.
-                    seg_pam = (mutation.dna[mutation.pam: mutation.pam+ (mutation.mutation_loc - mutation.pam)], pam_font)
+                    seg_pam = [(mutation.dna[mutation.pam: mutation.pam+ (mutation.mutation_loc - mutation.pam)], pam_font), blank]
                 else:
-                    seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
+                    #identify how much, if any of the pam we mutated
+                    if mode == 0 and mutation.distance_from_pam == 0: # we mutated the entire pam
+                        seg_pam = [pam_mut_seg, blank]   # we don't need to show the pam
+                    elif mode == 1 and mutation.distance_from_pam == 3: # we mutated the first char
+                        seg_pam = [pam_mut_seg, (mutation.dna[mutation.pam+1: mutation.pam+3], pam_font)]
+                        mod_dna2 = 2
+                    elif mode == 1 and mutation.distance_from_pam == 0: # we mutated the last two characters
+                        seg_pam = [pam_mut_seg, (mutation.dna[mutation.pam: mutation.pam+1], pam_font)]
+                        mod_dna3 = 1
+                    elif mode == 2 and mutation.distance_from_pam == 0:  # we mutated the last char
+                        seg_pam = [(mutation.dna[mutation.pam: mutation.pam+2], pam_font), pam_mut_seg]
+                        mod_dna3 = 2
+                    elif mode == 2 and mutation.distance_from_pam == 3:  # we mutated the first two chars
+                        seg_pam = [pam_mut_seg, (mutation.dna[mutation.pam+2: mutation.pam+3], pam_font)]
+                        mod_dna2 = 1
+                    else:  # we mutated the seed
+                        seg_pam = [(mutation.dna[mutation.pam: mutation.pam+3], pam_font), blank]
                 seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
+
+                # if we modified the seed instead of the pam, this is what we need to do
+                update_dna_2 = False
+                if mutation.distance_from_pam is not None and not ((mode == 1 and mutation.distance_from_pam == 3) or  (mode == 2 and mutation.distance_from_pam == 3)) and mutation.distance_from_pam > 0:
+                    update_dna_2 = True
                 
                 if mutation.mutation_loc < mutation.pam:  #upstream mutation
                     seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
-                    seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
-                    seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-                    sheet1.write_rich_text(i + column_pos, 8, (
-                    seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
+                    if update_dna_2:
+                        seg_dna2 = [(mutation.dna[mutation.mutation_loc + 3:mutation.pam - mutation.distance_from_pam + mode], dna_font), pam_mut_seg, (mutation.dna[mutation.pam - mutation.distance_from_pam + mode + 3:mutation.pam], dna_font)]
+                    else:
+                        seg_dna2 = [(mutation.dna[mutation.mutation_loc+3:mutation.pam - mod_dna2], dna_font), blank, blank]
+                    seg_dna3 = (mutation.dna[mutation.pam+3 + mod_dna3:len(mutation.dna) - len(third)], dna_font)
+                    sheet1.write_rich_text(i + column_pos, 8, (seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2[0], seg_dna2[1], seg_dna2[2], seg_pam[0], seg_pam[1], seg_dna3, seg_third))
                 else:    #downstream mutation
-                    seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
-                    seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
+                    if update_dna_2:
+                        seg_dna1 = [(mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam - mod_dna2], dna_font), blank, blank]
+                    else:
+                        seg_dna1 = [(mutation.dna[
+                                     len(first) + config.GUIDE_LENGTH + len(second):mutation.pam - mod_dna2], dna_font),
+                                    blank, blank]
+                    seg_dna2 = (mutation.dna[mutation.pam + 3 + mod_dna3:mutation.mutation_loc], dna_font)
                     seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
                     sheet1.write_rich_text(i + column_pos, 8, (
-                    seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
+                            seg_first, seg_guide, seg_second, seg_dna1[0], seg_dna1[1], seg_dna1[2], seg_pam[0], seg_pam[1], seg_dna2, seg_mutation, seg_dna3, seg_third))
                     
             
                 if (mutation.complement):
