@@ -607,6 +607,8 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
         guide_font = xlwt.easyfont('color_index blue')
         pam_font = xlwt.easyfont('color_index green')
         dna_font = xlwt.easyfont('color_index black')
+        
+        test_font = xlwt.easyfont('color_index yellow')
     
         first = config.first_sequence
         second = config.second_sequence
@@ -648,28 +650,73 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file = Tr
                 seg_guide = (mutation.dna[len(first):len(first)+config.GUIDE_LENGTH], guide_font)
                 seg_second = (mutation.dna[len(first)+config.GUIDE_LENGTH:len(first)+config.GUIDE_LENGTH+len(second)], extra_font)
                 
+                extra_font = xlwt.easyfont('color_index gray50')
+                mutation_font = xlwt.easyfont('color_index red')
+                guide_font = xlwt.easyfont('color_index blue')
+                pam_font = xlwt.easyfont('color_index green')
+                dna_font = xlwt.easyfont('color_index black')
+                
+                test_font = xlwt.easyfont('color_index orange')
+                
                 if mutation.complement:
                     seg_mutation = (invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3]), mutation_font)
                 else:
                     seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc+3], mutation_font)
-
-                seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
-                seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
+                    
+                    
+                # get mutation index
+                sequence = mutation.dna
+                mutated_base_index = mutation.mutation_loc
+                mutated_base = sequence[mutated_base_index]
+                     
+                # Check if it is a pam or seed mutation
+                is_pam_mutation = mutation.pam <= mutated_base_index <= mutation.pam + 2
+                is_seed_mutation = mutation.pam - 7 <= mutated_base_index <= mutation.pam - 1
                 
                 if mutation.mutation_loc < mutation.pam:  #upstream mutation
+                    seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
+                    seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)     
                     seg_dna1 = (mutation.dna[len(first)+config.GUIDE_LENGTH+len(second):mutation.mutation_loc], dna_font)
                     seg_dna2 = (mutation.dna[mutation.mutation_loc+3:mutation.pam], dna_font)
                     seg_dna3 = (mutation.dna[mutation.pam+3:len(mutation.dna) - len(third)], dna_font)
-                    sheet1.write_rich_text(i + column_pos, 7, (
-                    seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
+                    
+                    if is_pam_mutation or is_seed_mutation:
+                        #sequence = sequence[0:mutated_base_index] + mutated_base + sequence[mutated_base_index+1:]
+                        seg1 = sequence[0:mutated_base_index]                   
+                        seg2 = (mutated_base, test_font) # orange color
+                        seg3 = sequence[mutated_base_index+1:]   
+                        
+                        sheet1.write_rich_text(i + column_pos, 7, (seg1, seg2, seg3))
+                        
+                        #sheet1.write_rich_text(i + column_pos, 7, (seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg2, seg3))
+
+                        
+                    else:
+                        sheet1.write_rich_text(i + column_pos, 7, (
+                            seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2, seg_pam, seg_dna3, seg_third))
+                            
+                
                 else:    #downstream mutation
+                    seg_pam = (mutation.dna[mutation.pam: mutation.pam+3], pam_font)
+                    seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
+                
                     seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
                     seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
                     seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
-                    sheet1.write_rich_text(i + column_pos, 7, (
-                    seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
                     
-            
+                    if is_pam_mutation or is_seed_mutation:
+                        seg1 = sequence[0:mutated_base_index]                   
+                        seg2 = (mutated_base, test_font) # orange color
+                        seg3 = sequence[mutated_base_index+1:]   
+                        
+                        sheet1.write_rich_text(i + column_pos, 7, (seg1, seg2, seg3))
+                        #sheet1.write_rich_text(i + column_pos, 7, (seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg2, seg3))
+                         
+                    else:  
+                        sheet1.write_rich_text(i + column_pos, 7, (
+                            seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seg_mutation, seg_dna3, seg_third))
+                
+               
                 if (mutation.complement):
                     mutation.dna = invert_dna(mutation.dna)    
                     
@@ -843,6 +890,25 @@ def get_all_mutations( _dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once = Fal
     
                 for md in mutated_dna:
                     mutations_output.append(md)
+           
+            
+    '''   
+    for mutation in mutations_output:       
+        sequence = mutation.dna
+        mutated_base_index = mutation.mutation_loc
+        mutated_base = sequence[mutated_base_index]
+        
+        is_pam_mutation = mutation.pam <= mutated_base_index <= mutation.pam + 2
+        is_seed_mutation = mutation.pam - 7 <= mutated_base_index <= mutation.pam - 1
+        
+        if is_pam_mutation or is_seed_mutation:
+            mutated_base = "<span style='color: yellow;'>{}</span>".format(mutated_base)
+            print(mutated_base)
+        
+        sequence = sequence[0:mutated_base_index] + mutated_base + sequence[mutated_base_index+1:]
+        #print(sequence)
+       # mutation.dna = sequence
+       '''
                 
     return mutations_output
 
