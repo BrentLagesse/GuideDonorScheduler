@@ -619,7 +619,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
         sheet1.write(column_pos, 2, 'Mutation To')
         sheet1.write(column_pos, 3, 'Mutation Offset from Start of Gene')
         sheet1.write(column_pos, 4, 'Reverse Complement')
-        sheet1.write(column_pos, 5, 'Mutation Distance Start of PAM')
+        sheet1.write(column_pos, 5, 'Mutation Distance from Cut Site')
         sheet1.write(column_pos, 6, 'Original PAM')
         sheet1.write(column_pos, 7, 'Seed Mutation Distance From PAM')
         sheet1.write(column_pos, 8, 'Result')
@@ -660,7 +660,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                 sheet1.write(i + column_pos, 2, mutation.mutation[1])
                 sheet1.write(i + column_pos, 3, mutation.pam_location_in_gene + (mutation.mutation_loc - mutation.pam ) - config.GENE_START_BUFFER)
                 sheet1.write(i + column_pos, 4, mutation.complement)
-                sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - mutation.pam)))
+                sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - (mutation.pam - 6))))   # 3 bp upstream of pam + the length of the mutation (3 bp)
                 sheet1.write(i + column_pos, 6, mutation.original_pam)
                 sheet1.write(i + column_pos, 7, mutation.distance_from_pam)
 
