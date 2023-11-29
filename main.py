@@ -617,7 +617,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
         sheet1.write(column_pos, 0, 'ID')
         sheet1.write(column_pos, 1, 'Mutation From')
         sheet1.write(column_pos, 2, 'Mutation To')
-        sheet1.write(column_pos, 3, 'Mutation Location')
+        sheet1.write(column_pos, 3, 'Mutation Offset from Start of Gene')
         sheet1.write(column_pos, 4, 'Reverse Complement')
         sheet1.write(column_pos, 5, 'Mutation Distance Start of PAM')
         sheet1.write(column_pos, 6, 'Original PAM')
