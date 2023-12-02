@@ -172,23 +172,23 @@ def get_dna():
 # Returns locations of NGG and NCC triples as a set of arrays : [NGGs, NCCs]
 def get_locations(dna):
     # find all of the locations of the NGG or CCN triples
-    # AMINO_ACID_IGNORE = 1 * 3 # // Ignores the first amino acid in the sequence
-    AMINO_ACID_IGNORE = 3 - config.GENE_START_BUFFER % 3  # // Ignores the first amino acid in the sequence that has a piece in the buffer
-    gene_only = dna[config.GENE_START_BUFFER + AMINO_ACID_IGNORE:len(dna) - config.GENE_END_BUFFER]
-    regular = gene_only[AMINO_ACID_IGNORE:]
-    gg_locs = [loc.start() + config.GENE_START_BUFFER - 1 + AMINO_ACID_IGNORE for loc in
+    gene_only = dna[config.GENE_START_BUFFER:len(dna) - config.GENE_END_BUFFER]
+
+    gg_locs = [loc.start() + config.GENE_START_BUFFER - 1 for loc in
                re.finditer('(?=GG)', gene_only)]  # minus one accounts for the N of NGG
-    inverted = invert_dna(gene_only[AMINO_ACID_IGNORE:])
-    cc_locs = [loc.start() + config.GENE_START_BUFFER - 1 for loc in
-               re.finditer('(?=GG)', inverted)]  # Double check if this also needs a -1?
+    cc_locs = [loc.start() + config.GENE_START_BUFFER for loc in
+               re.finditer('(?=CC)', gene_only)]
     # Make sure its using nGG pams for reverse compliment, look into this and see why nCCs are used
 
     return [gg_locs, cc_locs]
 
 
 # Returns the 20 base-pairs before the PAM location
-def create_guides(dna, loc):
-    return dna[loc - 20:loc]
+def create_guides(dna, loc, complement):
+    if complement:
+        return invert_dna(dna[loc+3:loc+23])
+    else:
+        return dna[loc - 20:loc]
 
 
 # Returns a list of guides subtracting all duplicates, leaving guides of either highest priority, or the first instance of a gene
@@ -255,8 +255,11 @@ def insert_extra_sequence(candidate_dna, guide):
 
 
 def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep_trying=False, distance_from_pam=0,
-                     mutation_location=-1):
-
+                     mutation_location=-1, complement=False, down=False):
+    if complement:
+        pam_char = 'C'
+    else:
+        pam_char = 'G'
     actual_mutation = [mutant[0], mutant[1]]
     # if first_amino_acid_loc > 76, we are replacing downstream
     if first_amino_acid_loc == mutation_location:  # we would be replacing the mutation
@@ -293,8 +296,19 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             if mutant[0] == mutant[1] or pam_case != 0:  # this is only true for PAM or seed-option for pam
                 replaceable = True
                 # identify the cases where we can't replace the PAM
-                if pam_case == 1 and mutation[0] == 'G' and mutation[1] == 'G':  # this would replace GG with GG
-                    replaceable = False
+                if distance_from_pam == 0:
+                    if pam_case == 1 and not down and mutation[2] == pam_char:  # this would replace GG with GG
+                        replaceable = False
+                    if pam_case == 1 and down and mutation[0] == pam_char:  # this would replace GG with GG
+                        replaceable = False
+                    if pam_case == 2 and mutation[0] == pam_char and mutation[1] == pam_char:  # this would replace GG with GG
+                        replaceable = False
+                    if pam_case == 3 and not down and mutation[0] == pam_char:  # this would replace CC with CC
+                        replaceable = False
+                    if pam_case == 3 and down and mutation[2] == pam_char:  # this would replace CC with CC
+                        replaceable = False
+                    if pam_case == 4 and mutation[1] == pam_char and mutation[2] == pam_char:  # this would replace CC with CC
+                        replaceable = False
 
                 # if mutation[2] == 'G' and amino_acid_str[2] == 'G':  # this would introduce a GG on the back end
 
@@ -326,6 +340,8 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
                 actual_mutation[0] = string_to_acid[candidate_dna[first_amino_acid_loc:first_amino_acid_loc + 3]]
                 actual_mutation[1] = string_to_acid[mutation]
                 if not config.USE_DEBUG_MUTATION:
+                    if not (mutant[0] == mutant[1]) and complement:
+                        mutation = invert_dna(mutation)
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[
                                                                                       first_amino_acid_loc + 3:]
                 else:
@@ -340,7 +356,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
             return perform_mutation(candidate_dna, first_amino_acid_loc - 3, 3, mutant,
-                                    distance_from_pam=distance_from_pam + 3)
+                                    distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
 
     if config.VERBOSE_EXECUTION:
         print('Mutant was not desireable')
@@ -358,9 +374,15 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
     UPSTREAM = (config.UP_ACIDS + 2) * 3
     DOWNSTREAM = config.DOWN_ACIDS * 3
+    order = 0
+    if complement:
+        temp = UPSTREAM
+        UPSTREAM = DOWNSTREAM
+        DOWNSTREAM = temp
+        order = 1
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
-    guide = create_guides(dna, pam)
+    guide = create_guides(dna, pam, complement)
 
     # If using the guide library, automatically reject any guide not present in the library
     if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
@@ -383,23 +405,23 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     # 2)  Find the amino acid you want to mutate
 
+
     first_amino_acid_loc = int()
-    origin = first_amino_acid_loc = pam - UPSTREAM
-    for i in range(0, 3):  # We want to start on the first amino acid that is within our upstream range
-        if (pam - config.GENE_START_BUFFER + i) % 3 == 0:
-            first_amino_acid_loc = pam - UPSTREAM + i
+    if not complement:
+        first_amino_acid_loc = pam - UPSTREAM
+        for i in range(0, 3):  # We want to start on the first amino acid that is within our upstream range
+            if (pam - config.GENE_START_BUFFER + i) % 3 == 0:
+                first_amino_acid_loc = pam - UPSTREAM + i
+    else:
+        first_amino_acid_loc = pam
+        for i in range(0, 3):  # We want to start on the first amino acid that is within our upstream range
+            if (pam - config.GENE_START_BUFFER + i) % 3 == 0:
+                first_amino_acid_loc = pam +  i
     while first_amino_acid_loc < config.GENE_START_BUFFER:  # ignore acids outside the gene
         first_amino_acid_loc += 3
+    while first_amino_acid_loc >= len(dna) - config.GENE_END_BUFFER:  # ignore acids outside the gene
+            first_amino_acid_loc -= 3
 
-    pam_modifier = origin - first_amino_acid_loc
-    # pam -= pam_modifier
-
-    # print(dna[pam-20:pam+20])
-    # print(dna[pam-20:pam] + " " + dna[pam:pam+3] + " " + dna[pam+3:pam+20] )
-
-    # first_amino_acid_loc += 3 # Adding 3 to ignore the start codon
-
-    # candidate_dna = dna[first_amino_acid_loc:candidate_end]   #grab starting from the first full amino acid
     mutation_successful = False
     mutation_location = -1
     if (config.PRINT_MUTATION_CHECKS):
@@ -409,57 +431,65 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     candidate_dnas = []
     mutation_locations = []
+    for ordering in range(2):
+        if (ordering+order) % 2 == 0 and (first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 6 < pam):  # only do upstream if we are still in the gene
+            if complement:   # we have fo fix up the first amino acid location if we are on the reverse
+                for i in range(0, 3):  # We want to start on the first amino acid that is within our upstream range
+                    if (pam - config.GENE_START_BUFFER + i) % 3 == 0:
+                        first_amino_acid_loc = pam - UPSTREAM + i
+                    while first_amino_acid_loc < config.GENE_START_BUFFER:  # ignore acids outside the gene
+                        first_amino_acid_loc += 3
+                    while first_amino_acid_loc > config.GENE_END_BUFFER:  # ignore acids outside the gene
+                        first_amino_acid_loc -= 3
+            #        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
+            for i in range(UPSTREAM - 3, -1, -3):  # check upstream, then check downstream
+                if i + first_amino_acid_loc + 3 >= pam:  # don't go into the pam (TODO:  I think this is true)
+                    continue
+                # convert first_amino_acid_loc from global dna to candidate dna
+                # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+                candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+                if (config.PRINT_MUTATION_CHECKS):
+                    print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
+                                                                                   candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
+                                                                                                                                                                candidate_first_amino_acid_loc + 3:])
+                # 2)  Actually perform the mutation
+                mutation_successful, temp_candidate_dna, d_pam, actual_mutation = perform_mutation(candidate_dna,
+                                                                                  candidate_first_amino_acid_loc, 0, mutant)
+                if config.TRACE_CANDIDATE_DNA_GENERATION:
+                    print("Candidate DNA:")
+                    print(temp_candidate_dna)
+                if mutation_successful:
+                    # candidate_dna = temp_candidate_dna
+                    # mutation_location = candidate_first_amino_acid_loc
+                    # break
 
-    if first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 6 < pam:  # only do upstream if we are still in the gene
-        #        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
-        for i in range(UPSTREAM - 3, -1, -3):  # check upstream, then check downstream
-            if i + first_amino_acid_loc + 3 >= pam:  # don't go into the pam (TODO:  I think this is true)
-                continue
-            # convert first_amino_acid_loc from global dna to candidate dna
-            # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
-            candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
-            if (config.PRINT_MUTATION_CHECKS):
-                print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
-                                                                               candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
-                                                                                                                                                            candidate_first_amino_acid_loc + 3:])
-            # 2)  Actually perform the mutation
-            mutation_successful, temp_candidate_dna, d_pam, actual_mutation = perform_mutation(candidate_dna,
-                                                                              candidate_first_amino_acid_loc, 0, mutant)
-            if config.TRACE_CANDIDATE_DNA_GENERATION:
-                print("Candidate DNA:")
-                print(temp_candidate_dna)
-            if mutation_successful:
-                # candidate_dna = temp_candidate_dna
-                # mutation_location = candidate_first_amino_acid_loc
-                # break
+                    # Instead of setting them once, am now pushing them onto the list
+                    candidate_dnas.append(temp_candidate_dna)
+                    mutation_locations.append(candidate_first_amino_acid_loc)
+                    if only_once:
+                        break
 
-                # Instead of setting them once, am now pushing them onto the list
-                candidate_dnas.append(temp_candidate_dna)
-                mutation_locations.append(candidate_first_amino_acid_loc)
-                if only_once:
-                    break
-
-    # if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # Original version before my tweak
-    if candidate_end < (len(dna) - config.GENE_END_BUFFER):  # only do downstream if we are still in the gene
-        for i in range(0, DOWNSTREAM, 3):  # check upstream, then check downstream
-            # convert first_amino_acid_loc from global dna to candidate dna
-            # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
-            candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start  # this used to add UPSTREAM and I don't know why
-            if (config.PRINT_MUTATION_CHECKS):
-                print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
-                                                                               candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
-                                                                                                                                                            candidate_first_amino_acid_loc + 3:])
-            # 2)  Actually perform the mutation
-            mutation_successful, temp_candidate_dna, d_pam, actual_mutation = perform_mutation(candidate_dna,
-                                                                              candidate_first_amino_acid_loc, 0, mutant)
-            if config.TRACE_CANDIDATE_DNA_GENERATION:
-                print("Reverse:")
-                print(temp_candidate_dna)
-            if mutation_successful:
-                candidate_dnas.append(temp_candidate_dna)
-                mutation_locations.append(candidate_first_amino_acid_loc)
-                if only_once:
-                    break
+        # if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # Original version before my tweak
+        if (ordering+order) % 2 == 1 and (candidate_end < (len(dna) - config.GENE_END_BUFFER)):  # only do downstream if we are still in the gene
+            for i in range(0, DOWNSTREAM, 3):  # check upstream, then check downstream
+                # convert first_amino_acid_loc from global dna to candidate dna
+                # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+                candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start  # this used to add UPSTREAM and I don't know why
+                if (config.PRINT_MUTATION_CHECKS):
+                    print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
+                                                                                   candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
+                                                                                                                                                                candidate_first_amino_acid_loc + 3:])
+                # 2)  Actually perform the mutation
+                mutation_successful, temp_candidate_dna, d_pam, actual_mutation = perform_mutation(candidate_dna,
+                                                                                  candidate_first_amino_acid_loc, 0, mutant, complement=complement)
+                if config.TRACE_CANDIDATE_DNA_GENERATION:
+                    print("Reverse:")
+                    print(temp_candidate_dna)
+                if mutation_successful:
+                    candidate_dnas.append(temp_candidate_dna)
+                    mutation_locations.append(candidate_first_amino_acid_loc)
+                    if only_once:
+                        break
 
     # if not mutation_successful:
     if len(candidate_dnas) == 0:
@@ -480,7 +510,11 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         # pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
         pam_string = dna[pam:pam + 3]
         mutation_successful = False
-        if 'GG' in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]):
+        if complement:
+            pam_indicator = 'CC'
+        else:
+            pam_indicator = 'GG'
+        if pam_indicator in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]):
 
             # 2)  mutate pam
             # figure out the pam amino acid situation (does it split, and if so where)
@@ -492,7 +526,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                 pam_mutant = [pam_acid, pam_acid]
                 mutation_successful, candidate_dna, d_pam, pam_mutation = perform_mutation(candidate_dna, pam_loc_in_candidate, 0,
                                                                              pam_mutant,
-                                                                             mutation_location=mutation_location)
+                                                                             mutation_location=mutation_location, complement=True)
                 if config.TRACE_CANDIDATE_DNA_GENERATION:
                     print("PAM Candidate DNA:")
                     print(temp_candidate_dna)
@@ -502,22 +536,37 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                     gs.failed_due_to_pam += 1
                     return None
             else:
-                if pam_case == 1:  # the N is in one acid and the GG is in another so we can only replace down
+                if complement and pam_case == 1:
+                    pam_case = 4
+                elif complement and pam_case == 2:
+                    pam_case = 3
+
+                if pam_case == 2:  # the N is in one acid and the GG is in another so we can only replace down
                     # TODO:  make sure we don't overwrite the mutation by removing the pam
                     pam_string_up = None  # dna[pam - 1:pam + 2]
                     pam_string_down = dna[pam + 1:pam + 4]
 
-                elif pam_case == 2:  # the NG is in one acid and the G is in another
+                elif pam_case == 1:  # the NG is in one acid and the G is in another
+                    pam_string_up = dna[pam - 1:pam + 2]
+                    pam_string_down = dna[pam + 2:pam + 5]
+
+                elif pam_case == 3:  # the N is in second acid and the CC is in first so we can only replace up
+                    # TODO:  make sure we don't overwrite the mutation by removing the pam
+                    pam_string_up = dna[pam + 1:pam + 4]
+                    pam_string_down = None
+
+                elif pam_case == 4:  # the NC is in second acid and the C is in first
                     pam_string_up = dna[pam - 1:pam + 2]
                     pam_string_down = dna[pam + 2:pam + 5]
 
                 replaceable_pam = False
                 pam_mutant_up = None
+                pam_mutant_down = None
                 if pam_string_up is not None and pam_string_up in string_to_acid:
                     pam_acid_up = string_to_acid[pam_string_up]
                     replaceable_pam = True
                     pam_mutant_up = [pam_acid_up, pam_acid_up]
-                if pam_string_down in string_to_acid:
+                if pam_string_down is not None and pam_string_down in string_to_acid:
                     pam_acid_down = string_to_acid[pam_string_down]
                     replaceable_pam = True
                     pam_mutant_down = [pam_acid_down, pam_acid_down]
@@ -527,31 +576,29 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                     mutation_successful, temp_candidate_dna, d_pam, pam_mutation = perform_mutation(candidate_dna,
                                                                                       pam_loc_in_candidate - 1,
                                                                                       pam_case, pam_mutant_up,
-                                                                                      mutation_location=mutation_location)
+                                                                                      mutation_location=mutation_location, complement=complement)
                     if config.TRACE_CANDIDATE_DNA_GENERATION:
                         print("PAM Candidate DNA 2:")
                         print(temp_candidate_dna)
                     if mutation_successful:
                         candidate_dna = temp_candidate_dna
-                if not mutation_successful:  # try downstream if upstream didn't work
+                if not mutation_successful and pam_mutant_down is not None:  # try downstream if upstream didn't work
                     if config.TRACE_CANDIDATE_DNA_GENERATION:
                         print("PAM Candidate DNA 3:")
                         print(temp_candidate_dna)
                     mutation_successful, temp_candidate_dna, d_pam, pam_mutation = perform_mutation(candidate_dna,
                                                                                       pam_loc_in_candidate + pam_case,
                                                                                       pam_case, pam_mutant_down,
-                                                                                      mutation_location=mutation_location)
+                                                                                      mutation_location=mutation_location, complement=complement, down=True)
                     if mutation_successful:
                         candidate_dna = temp_candidate_dna
         else:
             mutation_successful = True  # we mutated the PAM already, so we didn't need to do another mutation
         if mutation_successful:
             pam_loc = pam_loc_in_candidate
-            if complement:  # if we are on the reverse complement, invert it back before we add the other stuff
-                candidate_dna = invert_dna(candidate_dna)
-                guide = invert_dna(guide)
-                mutation_location = len(candidate_dna) - mutation_location - 3
-                pam_loc = len(candidate_dna) - pam_loc - 3
+#            if complement:  # if we are on the reverse complement, invert it back before we add the other stuff
+#                mutation_location = len(candidate_dna) - mutation_location - 3
+#                pam_loc = len(candidate_dna) - pam_loc - 3
 
             candidate_dna = insert_extra_sequence(candidate_dna, guide)
             # we just added 52 + 20 (guide) basepairs
@@ -899,17 +946,18 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
     _only_once = only_once
 
     mutations_output = []
+    if not config.DEBUG_INVERSE:
+        for loc in _dna_locs:
+            # I don't think we need to actually find the guides here since it is just pam - 20
+            # guides = create_guides(dna, loc)
+            # for g in guides:   # for each guide do each mutation
 
-    for loc in _dna_locs:
-        # I don't think we need to actually find the guides here since it is just pam - 20
-        # guides = create_guides(dna, loc)
-        # for g in guides:   # for each guide do each mutation
+            for m in config.mutations_to_attempt.items():
+                mutated_dna = create_mutations(_dna, loc, list(m), only_once=_only_once)
+                if mutated_dna is not None:
+                    for md in mutated_dna:
+                        mutations_output.append(md)
 
-        for m in config.mutations_to_attempt.items():
-            mutated_dna = create_mutations(_dna, loc, list(m), only_once=_only_once)
-            if mutated_dna is not None:
-                for md in mutated_dna:
-                    mutations_output.append(md)
 
     # class MutationTracker:
     #    guide: int
@@ -920,7 +968,7 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
 
     for loc in _inv_dna_locs:
         for m in config.mutations_to_attempt.items():
-            mutated_dna = create_mutations(_inv_dna, loc, list(m), only_once=_only_once,
+            mutated_dna = create_mutations(_dna, loc, list(m), only_once=_only_once,
                                            complement=True)  # returns a mutation tracker
             if mutated_dna is not None:
                 # revert to original  -- Maybe we don't need to do this?
