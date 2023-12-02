@@ -10,12 +10,12 @@ mutations_to_attempt = dict()
 
 
 #fake mutations for testing
-mutations_to_attempt['glu'] = 'arg'
+#mutations_to_attempt['glu'] = 'arg'
 mutations_to_attempt['asp'] = 'arg'
-mutations_to_attempt['ser'] = 'glu'
-mutations_to_attempt['pro'] = 'leu'
-mutations_to_attempt['gln'] = 'thr'
-mutations_to_attempt['trp'] = 'tyr'
+#mutations_to_attempt['glu'] = 'lys'
+#mutations_to_attempt['gly'] = 'phe'
+#mutations_to_attempt['glu'] = 'thr'
+#mutations_to_attempt['asn'] = 'arg'
 
 
 
@@ -162,6 +162,7 @@ RUN_IN_EXECUTION_TESTING_MODE = False # Outputs only a few mutations for easier 
 USE_DEBUG_MUTATION = False # Output ZZZ as mutation for debug purposes
 TRACE_CANDIDATE_DNA_GENERATION = False # Print candidate DNA on each step of perform_mutation
 
+DEBUG_INVERSE = False
 # NOTES
 # DNA - GUIDE ID - MUTATION ID
 
