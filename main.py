@@ -507,7 +507,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     for i in range(len(candidate_dnas)):
         candidate_dna = candidate_dnas[i]
         mutation_location = mutation_locations[i]
-
+        seed_mutation = (mutation_location - 76 + pam > pam - 10) and (mutation_location < 76)      #  the mutation is in the seed
         pam_loc_in_candidate = 76  # this is always true
         # pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
         pam_string = dna[pam:pam + 3]
@@ -532,7 +532,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                 if config.TRACE_CANDIDATE_DNA_GENERATION:
                     print("PAM Candidate DNA:")
                     print(temp_candidate_dna)
-                if not mutation_successful:
+                if not mutation_successful and not seed_mutation:
                     if config.VERBOSE_EXECUTION:
                         print('Failed to find a valid replacement for the pam')
                     gs.failed_due_to_pam += 1
@@ -605,7 +605,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                         candidate_dna = temp_candidate_dna
         else:
             mutation_successful = True  # we mutated the PAM already, so we didn't need to do another mutation
-        if mutation_successful:
+        if mutation_successful or seed_mutation:
             pam_loc = pam_loc_in_candidate
 #            if complement:  # if we are on the reverse complement, invert it back before we add the other stuff
 #                mutation_location = len(candidate_dna) - mutation_location - 3
@@ -619,6 +619,8 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                 mutant[0] = actual_mutation[0]
             if mutant[1] == '*':
                 mutant[1] = actual_mutation[1]
+            if d_pam == None:   # mutation was in the pam
+                d_pam = 0
             result = MutationTracker(0, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam,
                                      d_pam, pam_string)
 
