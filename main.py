@@ -632,7 +632,9 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                 gs.failed_due_to_guide_library += 1
             else:
                 gs.succeeded += 1
-                successful_mutations.append(result)
+                #prevent dups
+                if result not in successful_mutations:
+                    successful_mutations.append(result)
         else:
             if config.VERBOSE_EXECUTION:
                 print('Mutation failed due to pam')  # TODO:  output why
