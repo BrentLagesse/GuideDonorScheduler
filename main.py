@@ -266,7 +266,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
         if distance_from_pam <= 5:  # don't mutate
             if config.VERBOSE_EXECUTION:
                 print('we did not mutate the pam because the mutation was withing 5 base pairs of pam')
-            return True, candidate_dna, distance_from_pam
+            return True, candidate_dna, distance_from_pam, actual_mutation
         return False, None, None, actual_mutation
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc + 3]
     if config.PRINT_MUTATION_CHECKS:
@@ -371,8 +371,10 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, keep
 def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     global gs
     global guide_lib
+    if pam == 1008:
+        pass
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
-    UPSTREAM = (config.UP_ACIDS + 2) * 3
+    UPSTREAM = (config.UP_ACIDS) * 3
     DOWNSTREAM = config.DOWN_ACIDS * 3
     order = 0
     if complement:
@@ -586,8 +588,17 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                     if config.TRACE_CANDIDATE_DNA_GENERATION:
                         print("PAM Candidate DNA 3:")
                         print(temp_candidate_dna)
+
+                    if pam_case == 3:
+                        offset = 1
+                    elif pam_case == 4:
+                        offset = 2
+                    else:
+                        offset = pam_case
+
+
                     mutation_successful, temp_candidate_dna, d_pam, pam_mutation = perform_mutation(candidate_dna,
-                                                                                      pam_loc_in_candidate + pam_case,
+                                                                                      pam_loc_in_candidate + offset,
                                                                                       pam_case, pam_mutant_down,
                                                                                       mutation_location=mutation_location, complement=complement, down=True)
                     if mutation_successful:
@@ -624,6 +635,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
             if config.VERBOSE_EXECUTION:
                 print('Mutation failed due to pam')  # TODO:  output why
             gs.failed_due_to_pam += 1
+
 
     if len(successful_mutations) == 0:
         return None
