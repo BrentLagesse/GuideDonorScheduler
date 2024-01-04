@@ -752,11 +752,8 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                     mutation.dna[len(first) + config.GUIDE_LENGTH:len(first) + config.GUIDE_LENGTH + len(second)],
                     extra_font)
 
-                if mutation.complement:
-                    seg_mutation = (
-                        invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3]), mutation_font)
-                else:
-                    seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3], mutation_font)
+
+                seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3], mutation_font)
 
                 mutation.distance_from_pam  # this is how far away from the pam we did the mutation
                 mode = mutation.pam_location_in_gene % 3  # this is which "mode" we were in, it gives us the offset from pam start
