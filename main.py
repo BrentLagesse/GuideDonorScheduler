@@ -36,7 +36,6 @@ class GlobalStats:
     failed_due_to_guide_library: int
     succeeded: int
 
-
 @dataclass
 class PrebuiltGuide:
     gene: str

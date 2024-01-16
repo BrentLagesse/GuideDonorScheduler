@@ -12,6 +12,7 @@ mutations_to_attempt = dict()
 #fake mutations for testing
 #mutations_to_attempt['glu'] = 'arg'
 mutations_to_attempt['asp'] = 'arg'
+
 #mutations_to_attempt['glu'] = 'lys'
 #mutations_to_attempt['gly'] = 'phe'
 #mutations_to_attempt['glu'] = 'thr'
