@@ -7,10 +7,11 @@
 mutations_to_attempt = dict()
 
 
+# TESTING
+
 #fake mutations for testing
 #mutations_to_attempt['glu'] = 'arg'
 mutations_to_attempt['asp'] = 'arg'
-mutations_to_attempt['NULL'] = 'NULL' # Issue 25 - Kill off the pam but don’t make an original mutational
 #mutations_to_attempt['glu'] = 'lys'
 #mutations_to_attempt['gly'] = 'phe'
 #mutations_to_attempt['glu'] = 'thr'
@@ -24,7 +25,7 @@ mutations_to_attempt['NULL'] = 'NULL' # Issue 25 - Kill off the pam but don’t 
 #
 # ----------------------------------------------------
 
-# WARNING !! Guide Library output files will be overwritten when output,
+# WARNING !! Guide Library ouput files will be overwritten when output,
 # be sure to move any modifications to input to avoid losing data.
 
 GUIDE_LIBRARY_OUTPUT_FILE = 'Guide_Library_Output'
@@ -46,7 +47,7 @@ OUTPUT_TO_ONE_FILE = True
 # Choose to output to multiple outputs or just one
 
 # If false, each gene will be output to an individual file following the
-# naming format of:
+# nameing format of:
 # MULTI_OUTPUT_PREFIX + gene
 # the output prefix is defined below
 
