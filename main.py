@@ -1026,9 +1026,9 @@ def execute_program():
             candidate_start = int(dna_locs[0]) - 10 - 66  # pam - UPSTREAM
             candidate_end = int(dna_locs[0]) - 10 + 66  # pam + 3 + DOWNSTREAM
             candidate_dna = dna[candidate_start:candidate_end]
-
+        
         all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
-
+        
         # NOTE // Kill guide is inserted as the very last one
         if (len(all_mutations) > 0):
             all_mutations.append(create_kill_guide(all_mutations[0]))
