@@ -27,10 +27,3 @@ This code is designed to facilitate the process of mutating a specific gene and 
      * This ensures that, even though the mutation itself is not in the immediate vicinity of the PAM, a silent mutation is made in a nearby region to potentially influence the Cas9 activity.
    * If the mutation is within 5 bases of the PAM and a silent PAM mutation is not achievable, the code may refrain from additional mutation.
      * In cases where the mutation is already close to the PAM (within 5 bases) and it is not feasible to perform a silent mutation in the PAM itself, the code may decide not to introduce any additional mutation.
-
-
-
-
-
-
-
