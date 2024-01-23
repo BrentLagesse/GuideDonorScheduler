@@ -7,7 +7,7 @@
 mutations_to_attempt = dict()
 
 
-
+# TESTING
 
 #fake mutations for testing
 #mutations_to_attempt['glu'] = 'arg'
@@ -25,7 +25,7 @@ mutations_to_attempt['asp'] = 'arg'
 #
 # ----------------------------------------------------
 
-# WARNING !! Guide Library ouput files will be overwritten when output, 
+# WARNING !! Guide Library ouput files will be overwritten when output,
 # be sure to move any modifications to input to avoid losing data.
 
 GUIDE_LIBRARY_OUTPUT_FILE = 'Guide_Library_Output'
