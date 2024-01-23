@@ -15,7 +15,6 @@ import xlutils
 # Other modules
 import config
 
-# TESTINGG TESTINGGG
 @dataclass
 class MutationTracker:
     guide: int
