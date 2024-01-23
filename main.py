@@ -447,7 +447,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     candidate_dnas = []
     mutation_locations = []
     for ordering in range(2):
-        if (ordering+order) % 2 == 0 and (first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 6 < pam) and (mutant[0] is not 'NULL') and (mutant[1] is not 'NULL'):  # only do upstream if we are still in the gene
+        if (ordering+order) % 2 == 0 and (first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 6 < pam) and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):  # only do upstream if we are still in the gene
             if complement:   # we have fo fix up the first amino acid location if we are on the reverse
                 for i in range(0, 3):  # We want to start on the first amino acid that is within our upstream range
                     if (pam - config.GENE_START_BUFFER + i) % 3 == 0:
@@ -486,7 +486,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                         break
 
         # if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # Original version before my tweak
-        if (ordering+order) % 2 == 1 and (candidate_end < (len(dna) - config.GENE_END_BUFFER)) and (mutant[0] is not 'NULL') and (mutant[1] is not 'NULL'):  # only do downstream if we are still in the gene
+        if (ordering+order) % 2 == 1 and (candidate_end < (len(dna) - config.GENE_END_BUFFER)) and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):  # only do downstream if we are still in the gene
             for i in range(0, DOWNSTREAM, 3):  # check upstream, then check downstream
                 # convert first_amino_acid_loc from global dna to candidate dna
                 # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
@@ -509,7 +509,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                         break
 
     # if not mutation_successful:
-    if len(candidate_dnas) == 0 and (mutant[0] is not 'NULL') and (mutant[1] is not 'NULL'):
+    if len(candidate_dnas) == 0 and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):
         if config.VERBOSE_EXECUTION:
             print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
         gs.failed_due_to_mutate += 1
