@@ -442,92 +442,101 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     if (config.PRINT_MUTATION_CHECKS):
         print("Checking " + str(candidate_dna) + " for " + str(mutant[0]) + ".")
 
-    # Setting up for multiple potentials
-
+    successful_mutations = []
     candidate_dnas = []
     mutation_locations = []
-    for ordering in range(2):
-        if (ordering+order) % 2 == 0 and (first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 6 < pam) and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):  # only do upstream if we are still in the gene
-            if complement:   # we have fo fix up the first amino acid location if we are on the reverse
-                for i in range(0, 3):  # We want to start on the first amino acid that is within our upstream range
-                    if (pam - config.GENE_START_BUFFER + i) % 3 == 0:
-                        first_amino_acid_loc = pam - UPSTREAM + i
-                    while first_amino_acid_loc < config.GENE_START_BUFFER:  # ignore acids outside the gene
-                        first_amino_acid_loc += 3
-                    while first_amino_acid_loc > config.GENE_END_BUFFER:  # ignore acids outside the gene
-                        first_amino_acid_loc -= 3
-            #        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
-            for i in range(UPSTREAM - 3, -1, -3):  # check upstream, then check downstream
-                if i + first_amino_acid_loc + 3 >= pam:  # don't go into the pam (TODO:  I think this is true)
-                    continue
-                # convert first_amino_acid_loc from global dna to candidate dna
-                # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
 
-                candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
-                if (config.PRINT_MUTATION_CHECKS):
-                    print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
-                                                                                   candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
-                                                                                                                                                                candidate_first_amino_acid_loc + 3:])
-                # 2)  Actually perform the mutation
-                mutation_successful, temp_candidate_dna, d_pam, actual_mutation, decision_path = perform_mutation(candidate_dna,
-                                                                                  candidate_first_amino_acid_loc, 0, mutant, decision_path)
-                if config.TRACE_CANDIDATE_DNA_GENERATION:
-                    print("Candidate DNA:")
-                    print(temp_candidate_dna)
-                if mutation_successful:
-                    # candidate_dna = temp_candidate_dna
-                    # mutation_location = candidate_first_amino_acid_loc
-                    # break
+    # ISSUE 25 - Only mutate in the PAM/Seed if "NULL" mutation is active.
+    # If "NULL" mutation is active we skip this section that does the original mutations
+    if (mutant[0] == 'NULL' and mutant[1] == 'NULL'):
+        null_active = True;
+        candidate_dnas.append(candidate_dna)
+    else:
+        null_active = False
 
-                    # Instead of setting them once, am now pushing them onto the list
-                    candidate_dnas.append(temp_candidate_dna)
-                    mutation_locations.append(candidate_first_amino_acid_loc)
-                    if only_once:
-                        break
+    if (not null_active):
 
-        # if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # Original version before my tweak
-        if (ordering+order) % 2 == 1 and (candidate_end < (len(dna) - config.GENE_END_BUFFER)) and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):  # only do downstream if we are still in the gene
-            for i in range(0, DOWNSTREAM, 3):  # check upstream, then check downstream
-                # convert first_amino_acid_loc from global dna to candidate dna
-                # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
+        # Setting up for multiple potentials
+        for ordering in range(2):
+            if (ordering+order) % 2 == 0 and (first_amino_acid_loc >= config.GENE_START_BUFFER and first_amino_acid_loc + 6 < pam) and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):  # only do upstream if we are still in the gene
+                if complement:   # we have fo fix up the first amino acid location if we are on the reverse
+                    for i in range(0, 3):  # We want to start on the first amino acid that is within our upstream range
+                        if (pam - config.GENE_START_BUFFER + i) % 3 == 0:
+                            first_amino_acid_loc = pam - UPSTREAM + i
+                        while first_amino_acid_loc < config.GENE_START_BUFFER:  # ignore acids outside the gene
+                            first_amino_acid_loc += 3
+                        while first_amino_acid_loc > config.GENE_END_BUFFER:  # ignore acids outside the gene
+                            first_amino_acid_loc -= 3
+                #        for i in range(UPSTREAM - 3, -1, -3):    # check upstream, then check downstream
+                for i in range(UPSTREAM - 3, -1, -3):  # check upstream, then check downstream
+                    if i + first_amino_acid_loc + 3 >= pam:  # don't go into the pam (TODO:  I think this is true)
+                        continue
+                    # convert first_amino_acid_loc from global dna to candidate dna
+                    # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
 
-                candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start  # this used to add UPSTREAM and I don't know why
-                if (config.PRINT_MUTATION_CHECKS):
-                    print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
-                                                                                   candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
-                                                                                                                                                                candidate_first_amino_acid_loc + 3:])
-                # 2)  Actually perform the mutation
-                mutation_successful, temp_candidate_dna, d_pam, actual_mutation, decision_path = perform_mutation(candidate_dna,
-                                                                                  candidate_first_amino_acid_loc, 0, mutant, decision_path, complement=complement)
-                if config.TRACE_CANDIDATE_DNA_GENERATION:
-                    print("Reverse:")
-                    print(temp_candidate_dna)
-                if mutation_successful:
-                    candidate_dnas.append(temp_candidate_dna)
-                    mutation_locations.append(candidate_first_amino_acid_loc)
-                    if only_once:
-                        break
+                    candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
+                    if (config.PRINT_MUTATION_CHECKS):
+                        print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
+                                                                                       candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
+                                                                                                                                                                    candidate_first_amino_acid_loc + 3:])
+                    # 2)  Actually perform the mutation
+                    mutation_successful, temp_candidate_dna, d_pam, actual_mutation, decision_path = perform_mutation(candidate_dna,
+                                                                                      candidate_first_amino_acid_loc, 0, mutant, decision_path)
+                    if config.TRACE_CANDIDATE_DNA_GENERATION:
+                        print("Candidate DNA:")
+                        print(temp_candidate_dna)
+                    if mutation_successful:
+                        # candidate_dna = temp_candidate_dna
+                        # mutation_location = candidate_first_amino_acid_loc
+                        # break
 
-    # if not mutation_successful:
-    if len(candidate_dnas) == 0 and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):
-        if config.VERBOSE_EXECUTION:
-            print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
-        gs.failed_due_to_mutate += 1
-        return None
+                        # Instead of setting them once, am now pushing them onto the list
+                        candidate_dnas.append(temp_candidate_dna)
+                        mutation_locations.append(candidate_first_amino_acid_loc)
+                        if only_once:
+                            break
 
-    # if we wrote over the pam already, we are fine, I think
+            # if candidate_end > (len(dna) - config.GENE_END_BUFFER):   # Original version before my tweak
+            if (ordering+order) % 2 == 1 and (candidate_end < (len(dna) - config.GENE_END_BUFFER)) and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):  # only do downstream if we are still in the gene
+                for i in range(0, DOWNSTREAM, 3):  # check upstream, then check downstream
+                    # convert first_amino_acid_loc from global dna to candidate dna
+                    # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
 
-    # We didn't perform any real mutation because NULL mutation is enabled
-    # Go ahead perform mutation in PAM or seed
-    #if mutant[0] is 'NULL' and mutant[1] is 'NULL':
+                    candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start  # this used to add UPSTREAM and I don't know why
+                    if (config.PRINT_MUTATION_CHECKS):
+                        print(candidate_dna[:candidate_first_amino_acid_loc] + " | " + candidate_dna[
+                                                                                       candidate_first_amino_acid_loc:candidate_first_amino_acid_loc + 3] + " | " + candidate_dna[
+                                                                                                                                                                    candidate_first_amino_acid_loc + 3:])
+                    # 2)  Actually perform the mutation
+                    mutation_successful, temp_candidate_dna, d_pam, actual_mutation, decision_path = perform_mutation(candidate_dna,
+                                                                                      candidate_first_amino_acid_loc, 0, mutant, decision_path, complement=complement)
+                    if config.TRACE_CANDIDATE_DNA_GENERATION:
+                        print("Reverse:")
+                        print(temp_candidate_dna)
+                    if mutation_successful:
+                        candidate_dnas.append(temp_candidate_dna)
+                        mutation_locations.append(candidate_first_amino_acid_loc)
+                        if only_once:
+                            break
 
+        # if not mutation_successful:
+        if len(candidate_dnas) == 0 and (mutant[0] != 'NULL') and (mutant[1] != 'NULL'):
+            if config.VERBOSE_EXECUTION:
+                print('Failed to find a valid place to mutate ' + mutant[0] + ' into ' + mutant[1])
+            gs.failed_due_to_mutate += 1
+            return None
 
-    successful_mutations = []
+        # if we wrote over the pam already, we are fine, I think
+
+        # We didn't perform any real mutation because NULL mutation is enabled
+        # Go ahead perform mutation in PAM or seed
+        #if mutant[0] is 'NULL' and mutant[1] is 'NULL':
 
     for i in range(len(candidate_dnas)):
         candidate_dna = candidate_dnas[i]
-        mutation_location = mutation_locations[i]
-        seed_mutation = (mutation_location - 76 + pam > pam - 10) and (mutation_location < 76)      #  the mutation is in the seed
+        if (not null_active):
+            mutation_location = mutation_locations[i]
+            seed_mutation = (mutation_location - 76 + pam > pam - 10) and (mutation_location < 76)      #  the mutation is in the seed
 
         pam_loc_in_candidate = 76  # this is always true
         # pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
@@ -538,7 +547,6 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         else:
             pam_indicator = 'GG'
         if pam_indicator in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]):
-
             decision_path += "Mutation from " + actual_mutation[0] + " to " + actual_mutation[1] + " did not disrupt the PAM. "
 
             # 2)  mutate pam
