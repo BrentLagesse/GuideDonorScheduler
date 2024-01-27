@@ -351,7 +351,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                 else:
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[
                                                                                    first_amino_acid_loc + 3:]
-                decision_path += "Mutated " + amino_acid + " (" + amino_acid_str + ") to " + actual_mutation[1] + " (" + mutation + "). "
+                #decision_path += "Mutated " + amino_acid + " (" + amino_acid_str + ") to " + actual_mutation[1] + " (" + mutation + "). "
                 return True, candidate_dna, distance_from_pam, actual_mutation, decision_path
         if not replaceable:
             if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
@@ -360,14 +360,14 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                 return False, None, None, actual_mutation, decision_path
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
-            decision_path += "Couldn't mutate the PAM, trying to force silent mutation. "
+            #decision_path += "Couldn't mutate the PAM, trying to force silent mutation. "
             return perform_mutation(candidate_dna, first_amino_acid_loc - 3, 3, mutant, decision_path,
                                     distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
 
     if config.VERBOSE_EXECUTION:
         print('Mutant was not desireable')
 
-    decision_path += "Couldn't mutate because " + amino_acid + " was not desireable. "
+    #decision_path += "Couldn't mutate because " + amino_acid + " was not desireable. "
     return False, None, None, actual_mutation, decision_path
 
 
@@ -451,6 +451,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     if (mutant[0] == 'NULL' and mutant[1] == 'NULL'):
         null_active = True;
         candidate_dnas.append(candidate_dna)
+        seed_mutation = False
     else:
         null_active = False
 
@@ -547,7 +548,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         else:
             pam_indicator = 'GG'
         if pam_indicator in (candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]):
-            decision_path += "Mutation from " + actual_mutation[0] + " to " + actual_mutation[1] + " did not disrupt the PAM. "
+            #decision_path += "Mutation from " + actual_mutation[0] + " to " + actual_mutation[1] + " did not disrupt the PAM. "
 
             # 2)  mutate pam
             # figure out the pam amino acid situation (does it split, and if so where)
@@ -641,7 +642,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                         candidate_dna = temp_candidate_dna
         else:
             mutation_successful = True  # we mutated the PAM already, so we didn't need to do another mutation
-            decision_path += "Mutation from " + actual_mutation[0] + " to " + actual_mutation[1] + " disrupted the PAM. "
+            #decision_path += "Mutation from " + actual_mutation[0] + " to " + actual_mutation[1] + " disrupted the PAM. "
         if mutation_successful or seed_mutation:
             pam_loc = pam_loc_in_candidate
 #            if complement:  # if we are on the reverse complement, invert it back before we add the other stuff
