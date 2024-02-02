@@ -8,7 +8,12 @@ This code is designed to facilitate the process of mutating a specific gene and 
 ### **Usage**
 1. #### Choose Target Gene and Guide Sequence: 
    * Choose the target gene (e.g., Ndc80) and identify the guide sequence by locating the NGG PAM sequence nearby.
+     * ```python main.py -i INPUT_FILE -o OUTPUT_FILE```
+       * The input file is in .fsa format
+       * The output file is in xls format
+       * If either input or output files are omitted, DEFAULT_IN_FILES and DEFAULT_OUT_FILE in config.py will be used
    * Identify the amino acid to be mutated and specify the desired mutation (e.g., Serine 49 to Alanine).
+     * Edit the mutations_to_attempt dict in config.py.  (e.g., ```mutations_to_attempt['ser'] = ['ala']``` to mutate Serine to Alanine) 
 2. #### Guide and Donor Design:
    * The guide sequence is the 20 bases upstream of the NGG PAM.
    * Design the donor sequence by selecting 132 base pairs surrounding the mutations, centered around both the main mutation and the PAM mutation.
