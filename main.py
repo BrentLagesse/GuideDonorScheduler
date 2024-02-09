@@ -260,8 +260,16 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
     #global amino_acid_number
     if complement:
         pam_char = 'C'
+        avoid_one = 'TC'
+        avoid_two = 'CT'
+        pam_indicator = 'CC'
+        offset = 3
     else:
         pam_char = 'G'
+        avoid_one = 'GA'
+        avoid_two = 'AG'
+        pam_indicator = 'GG'
+        offset = -3
 
     #amino_acid_number += 1
     actual_mutation = [mutant[0], mutant[1]]
@@ -301,10 +309,20 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                 replaceable = True
                 # identify the cases where we can't replace the PAM
                 if distance_from_pam == 0:
+                    if pam_case == 0 and not complement and (mutation.endswith(avoid_one) or mutation.endswith(avoid_two)):
+                        replaceable = False # This will avoid making NAG/NGA mutations on PAM
+                    if pam_case == 0 and complement and mutation.startswith(pam_indicator):
+                        replaceable = False # Avoid mutating a PAM to a PAM (ex: CCT to CCA)
+                    if pam_case == 0 and not complement and mutation.endswith(pam_indicator):
+                        replaceable = False # Avoid mutating a PAM to a PAM (ex: TGG to AGG)
+                    if pam_case == 0 and complement and (mutation.startswith(avoid_one) or mutation.startswith(avoid_two)):
+                        replaceable = False # This will avoid making CTN/TCN mutations on PAM for reverse strand
                     if pam_case == 1 and not down and mutation[2] == pam_char:  # this would replace GG with GG
                         replaceable = False
                     if pam_case == 1 and down and mutation[0] == pam_char:  # this would replace GG with GG
                         replaceable = False
+                    if pam_case == 2 and not down and candidate_dna[first_amino_acid_loc + 3] == pam_char and candidate_dna[first_amino_acid_loc + 4] == pam_char:
+                        replaceable = False # This will not change any of the GGs so no point mutating it
                     if pam_case == 2 and mutation[0] == pam_char and mutation[1] == pam_char:  # this would replace GG with GG
                         replaceable = False
                     if pam_case == 3 and not down and mutation[0] == pam_char:  # this would replace CC with CC
@@ -312,6 +330,8 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                     if pam_case == 3 and down and mutation[2] == pam_char:  # this would replace CC with CC
                         replaceable = False
                     if pam_case == 4 and mutation[1] == pam_char and mutation[2] == pam_char:  # this would replace CC with CC
+                        replaceable = False
+                    if pam_case == 4 and not down and candidate_dna[first_amino_acid_loc - 1] == pam_char and candidate_dna[first_amino_acid_loc - 2] == pam_char:
                         replaceable = False
 
                 # if mutation[2] == 'G' and amino_acid_str[2] == 'G':  # this would introduce a GG on the back end
@@ -346,23 +366,22 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                 if not config.USE_DEBUG_MUTATION:
                     if not (mutant[0] == mutant[1]) and complement:
                         mutation = invert_dna(mutation)
-                    candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[
-                                                                                      first_amino_acid_loc + 3:]
+                    candidate_dna = candidate_dna[:first_amino_acid_loc] + mutation + candidate_dna[first_amino_acid_loc + 3:]
                 else:
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[
                                                                                    first_amino_acid_loc + 3:]
                 #decision_path += "Mutated " + amino_acid + " (" + amino_acid_str + ") to " + actual_mutation[1] + " (" + mutation + "). "
                 return True, candidate_dna, distance_from_pam, actual_mutation, decision_path
-        if not replaceable:
+        if not replaceable and not down:
             if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
                 if config.VERBOSE_EXECUTION:
                     print('Could not find a replacement in the seed')
                 return False, None, None, actual_mutation, decision_path
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
-            #decision_path += "Couldn't mutate the PAM, trying to force silent mutation. "
-            return perform_mutation(candidate_dna, first_amino_acid_loc - 3, 3, mutant, decision_path,
-                                    distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
+
+            return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant, decision_path,
+                                        distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
 
     if config.VERBOSE_EXECUTION:
         print('Mutant was not desireable')
@@ -375,7 +394,6 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
 # pam is the location of the first character of the pam
 # mutant is key-val pair of mutant source to mutant destination [0] is key, [1] is value
 
-# only_once is used for debug, only runs through one mutation
 def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     global gs
     global guide_lib
@@ -537,7 +555,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         candidate_dna = candidate_dnas[i]
         if (not null_active):
             mutation_location = mutation_locations[i]
-            seed_mutation = (mutation_location - 76 + pam > pam - 10) and (mutation_location < 76)      #  the mutation is in the seed
+            seed_mutation = (mutation_location - 76 + pam > pam - 10) and (mutation_location < 76) # the mutation is in the seed
 
         pam_loc_in_candidate = 76  # this is always true
         # pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
@@ -555,12 +573,13 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
             pam_case = (pam - config.GENE_START_BUFFER) % 3
 
             if pam_case == 0:  # we only have a single amino acid
-
+            # go upstream only
                 pam_acid = string_to_acid[pam_string]
                 pam_mutant = [pam_acid, pam_acid]
+                offset = 0
                 mutation_successful, candidate_dna, d_pam, pam_mutation, decision_path = perform_mutation(candidate_dna, pam_loc_in_candidate, 0,
                                                                              pam_mutant, decision_path,
-                                                                             mutation_location=mutation_location, complement=True)
+                                                                             mutation_location=mutation_location, complement=complement)
                 if config.TRACE_CANDIDATE_DNA_GENERATION:
                     print("PAM Candidate DNA:")
                     print(temp_candidate_dna)
@@ -581,22 +600,29 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                     pam_case = 3
 
                 if pam_case == 2:  # the N is in one acid and the GG is in another so we can only replace down
+                    # mutate down once (ONLY MUTATE ONE OF THE G)
+                    # if failed then go upstream
                     # TODO:  make sure we don't overwrite the mutation by removing the pam
-                    pam_string_up = None  # dna[pam - 1:pam + 2]
+                    pam_string_up = dna[pam - 2:pam + 1]
                     pam_string_down = dna[pam + 1:pam + 4]
+                    offset = 1
 
                 elif pam_case == 1:  # the NG is in one acid and the G is in another
+                    # Check down stream first then go upstream
                     pam_string_up = dna[pam - 1:pam + 2]
                     pam_string_down = dna[pam + 2:pam + 5]
+                    offset = 2
 
-                elif pam_case == 3:  # the N is in second acid and the CC is in first so we can only replace up
+                elif pam_case == 3:  # the NC is in second acid and the C is in first
                     # TODO:  make sure we don't overwrite the mutation by removing the pam
                     pam_string_up = dna[pam + 1:pam + 4]
-                    pam_string_down = None
+                    pam_string_down = dna[pam - 2:pam + 1]
+                    offset = -2
 
-                elif pam_case == 4:  # the NC is in second acid and the C is in first
-                    pam_string_up = dna[pam - 1:pam + 2]
-                    pam_string_down = dna[pam + 2:pam + 5]
+                elif pam_case == 4:   # the N is in second acid and the CC is in first so we can only replace up
+                    pam_string_up = dna[pam + 2:pam + 5]
+                    pam_string_down = dna[pam - 1:pam + 2]
+                    offset = -1
 
                 replaceable_pam = False
                 pam_mutant_up = None
@@ -611,39 +637,45 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                     pam_mutant_down = [pam_acid_down, pam_acid_down]
                 if not replaceable_pam:
                     return None
-                if pam_mutant_up is not None:
+
+                if pam_string_down is not None: # Try downstream first
+
                     mutation_successful, temp_candidate_dna, d_pam, pam_mutation, decision_path = perform_mutation(candidate_dna,
-                                                                                      pam_loc_in_candidate - 1,
-                                                                                      pam_case, pam_mutant_up, decision_path,
-                                                                                      mutation_location=mutation_location, complement=complement)
+                        pam_loc_in_candidate + offset, pam_case, pam_mutant_down, decision_path,
+                        mutation_location=mutation_location, complement=complement, down=True)
+
                     if config.TRACE_CANDIDATE_DNA_GENERATION:
                         print("PAM Candidate DNA 2:")
                         print(temp_candidate_dna)
                     if mutation_successful:
                         candidate_dna = temp_candidate_dna
-                if not mutation_successful and pam_mutant_down is not None:  # try downstream if upstream didn't work
+                if not mutation_successful and pam_mutant_up is not None:  # try upstream if downstream didn't work
                     if config.TRACE_CANDIDATE_DNA_GENERATION:
                         print("PAM Candidate DNA 3:")
                         print(temp_candidate_dna)
 
-                    if pam_case == 3:
-                        offset = 1
-                    elif pam_case == 4:
+                    if complement:
                         offset = 2
                     else:
-                        offset = pam_case
-
+                        offset = -pam_case
 
                     mutation_successful, temp_candidate_dna, d_pam, pam_mutation, decision_path = perform_mutation(candidate_dna,
-                                                                                      pam_loc_in_candidate + offset,
-                                                                                      pam_case, pam_mutant_down, decision_path,
-                                                                                      mutation_location=mutation_location, complement=complement, down=True)
+                        pam_loc_in_candidate + offset, pam_case, pam_mutant_up, decision_path,
+                        mutation_location=mutation_location, complement=complement)
                     if mutation_successful:
                         candidate_dna = temp_candidate_dna
         else:
             mutation_successful = True  # we mutated the PAM already, so we didn't need to do another mutation
             #decision_path += "Mutation from " + actual_mutation[0] + " to " + actual_mutation[1] + " disrupted the PAM. "
         if mutation_successful or seed_mutation:
+            if null_active:
+                if complement:
+                    mutation_location = pam_loc_in_candidate + d_pam + offset
+                else:
+                    mutation_location = pam_loc_in_candidate - d_pam + offset
+
+                d_pam = abs(pam_loc_in_candidate - mutation_location)
+
             pam_loc = pam_loc_in_candidate
 #            if complement:  # if we are on the reverse complement, invert it back before we add the other stuff
 #                mutation_location = len(candidate_dna) - mutation_location - 3
@@ -686,7 +718,6 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         return successful_mutations
     # TODO:  Track the decisions we made in this method so we can output them
     # TODO:  Fix naming of the file and frontmatter
-
 
 # This method inverts the DNA so we can get the reverse complement strand
 def invert_dna(dna):
@@ -734,7 +765,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
         sheet1.write(column_pos, 6, 'Original PAM')
         sheet1.write(column_pos, 7, 'Seed Mutation Distance From PAM')
         sheet1.write(column_pos, 8, 'Result')
-        #sheet1.write(column_pos, 9, 'Comments')
 
         column_pos += 2
 
@@ -809,9 +839,8 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                 # this is a little hacky, but figure out the ordering of if the mut or pam goes first
                 blank = ('', pam_font)
                 if mutation.pam < mutation.mutation_loc < mutation.pam + 3:  # we mutated the pam with the OG mutation.
-                    seg_pam = [
-                        (mutation.dna[mutation.pam: mutation.pam + (mutation.mutation_loc - mutation.pam)], pam_font),
-                        blank]
+                    seg_pam = [(mutation.dna[mutation.pam: mutation.pam + (mutation.mutation_loc - mutation.pam)],
+                                pam_font), blank]
                 else:
                     # identify how much, if any of the pam we mutated
                     if mode == 0 and mutation.distance_from_pam == 0:  # we mutated the entire pam
@@ -828,7 +857,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                     elif mode == 2 and mutation.distance_from_pam == 3:  # we mutated the first two chars
                         seg_pam = [pam_mut_seg, (mutation.dna[mutation.pam + 2: mutation.pam + 3], pam_font)]
                         mod_dna2 = 1
-                    else:  # we mutated the seed
+                    else: # we mutated the seed
                         seg_pam = [(mutation.dna[mutation.pam: mutation.pam + 3], pam_font), blank]
                 seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
 
@@ -972,6 +1001,277 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
         # out_data = ["Guides", guides, "Guides inverted", inv_guides]
         # with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
         #    json.dump(out_data, file)
+
+# MINEEEEEEEEEEE
+'''def write_results(frontmatter_list, results_list, dna_list, use_output_file=True):
+    # use_output_file determines if the output in config will be used, or
+    # if a title will automatically be generated from the frontmatter
+
+    global gs
+
+    if use_output_file:
+        output_file = out_base;
+    else:
+        output_file = config.MULTI_OUTPUT_PREFIX + (str(frontmatter_list[0]).partition(' ')[0])[1:]
+
+    if (config.PRINT_MUTATION_RESULTS):
+
+        wb = Workbook()
+
+        if config.PRINT_MUTATION_SUCCESS_COUNTS:
+            print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
+            print('failed due to pam: ' + str(gs.failed_due_to_pam))
+            if (config.USE_GUIDE_LIBRARY):
+                print('failed due to guide library: ' + str(gs.failed_due_to_guide_library))
+            print('succeeded: ' + str(gs.succeeded))
+
+        column_pos = 0
+
+        sheet1 = wb.add_sheet('Mutation Results')
+        sheet1.write(column_pos, 0, 'ID')
+        sheet1.write(column_pos, 1, 'Mutation From')
+        sheet1.write(column_pos, 2, 'Mutation To')
+        sheet1.write(column_pos, 3, 'Mutation Offset from Start of Gene')
+        sheet1.write(column_pos, 4, 'Reverse Complement')
+        sheet1.write(column_pos, 5, 'Mutation Distance from Cut Site')
+        sheet1.write(column_pos, 6, 'Original PAM')
+        sheet1.write(column_pos, 7, 'Seed Mutation Distance From PAM')
+        sheet1.write(column_pos, 8, 'Result')
+
+        column_pos += 2
+
+        extra_font = xlwt.easyfont('color_index gray50')
+        pam_mut_font = xlwt.easyfont('color_index red')
+        guide_font = xlwt.easyfont('color_index blue')
+        pam_font = xlwt.easyfont('color_index green')
+        dna_font = xlwt.easyfont('color_index black')
+        mutation_font = xlwt.easyfont('color_index orange')
+
+        first = config.first_sequence
+        second = config.second_sequence
+        third = config.third_sequence
+
+        for g in range(len(results_list)):
+
+            frontmatter = frontmatter_list[g]
+            results = results_list[g]
+            dna = dna_list[g]
+
+            cur_id = (str(frontmatter).partition(' ')[0])[1:]
+            i = 0
+            for i, mutation in enumerate(results):
+
+                if config.TRACE_CANDIDATE_DNA_GENERATION:
+                    print("DNA during writing:")
+                    print(mutation.dna)
+
+                if (i == len(results) - 1):
+                    sheet1.write(i + column_pos, 0, cur_id + "_" + config.KILL_MUTATION_ID_SUFFIX)
+                else:
+                    sheet1.write(i + column_pos, 0, cur_id + "_" + str(i))
+                # We need the actual mutation location within the gene.
+                sheet1.write(i + column_pos, 1, mutation.mutation[0] + str(int((mutation.pam_location_in_gene + (
+                            mutation.mutation_loc - mutation.pam) - config.GENE_START_BUFFER) / 3) + 1))
+                sheet1.write(i + column_pos, 2, mutation.mutation[1])
+                sheet1.write(i + column_pos, 3, mutation.pam_location_in_gene + (
+                            mutation.mutation_loc - mutation.pam) - config.GENE_START_BUFFER)
+                sheet1.write(i + column_pos, 4, mutation.complement)
+                sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - (
+                            mutation.pam - 6))))  # 3 bp upstream of pam + the length of the mutation (3 bp)
+                sheet1.write(i + column_pos, 6, mutation.original_pam)
+                sheet1.write(i + column_pos, 7, mutation.distance_from_pam)
+                #sheet1.write(i + column_pos, 9, mutation.justification)
+
+                if (mutation.complement):
+                    pass
+                    # mutation.dna = invert_dna(mutation.dna)
+                # Potentially reading positions (and donor) from non inverted gene, when it should be read from reverse compliment?
+                # Not fully sure, still gotta look into this // NOTE \\
+
+                seg_first = (mutation.dna[0:len(first)], extra_font)
+                seg_guide = (mutation.dna[len(first):len(first) + config.GUIDE_LENGTH], guide_font)
+                seg_second = (
+                    mutation.dna[len(first) + config.GUIDE_LENGTH:len(first) + config.GUIDE_LENGTH + len(second)],
+                    extra_font)
+
+                if mutation.complement:
+                    seg_mutation = (
+                        invert_dna(mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3]), mutation_font)
+                else:
+                    seg_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3], mutation_font)
+
+                mode = mutation.pam_location_in_gene % 3  # this is which "mode" we were in, it gives us the offset from pam start
+                pam_mut_seg = None
+                if mutation.distance_from_pam is not None:  # None means the mutation took care of the pam for us
+                    start_of_pam_mutation = mutation.pam + mode - mutation.distance_from_pam
+                    pam_mut_seg = (mutation.dna[start_of_pam_mutation:start_of_pam_mutation + 3], pam_mut_font)
+                mod_dna2 = 0  # how much we need to remove from dna 2 because of pam mut
+                mod_dna3 = 0  # how much we need to remove from dna 3 because of pam mut
+                # this is a little hacky, but figure out the ordering of if the mut or pam goes first
+                blank = ('', pam_font)
+                if mutation.pam < mutation.mutation_loc < mutation.pam + 3:  # we mutated the pam with the OG mutation.
+                    seg_pam = [(mutation.dna[mutation.pam: mutation.pam + (mutation.mutation_loc - mutation.pam)],
+                                pam_font), blank]
+                else:
+                    # identify how much, if any of the pam we mutated
+                    if mode == 0 and mutation.distance_from_pam == 0:  # we mutated the entire pam
+                        seg_pam = [pam_mut_seg, blank]  # we don't need to show the pam
+                    elif mode == 1 and mutation.distance_from_pam == 3:  # we mutated the first char
+                        seg_pam = [pam_mut_seg, (mutation.dna[mutation.pam + 1: mutation.pam + 3], pam_font)]
+                        mod_dna2 = 2
+                    elif mode == 1 and mutation.distance_from_pam == 0:  # we mutated the last two characters
+                        seg_pam = [pam_mut_seg, (mutation.dna[mutation.pam: mutation.pam + 1], pam_font)]
+                        mod_dna3 = 1
+                    elif mode == 2 and mutation.distance_from_pam == 0:  # we mutated the last char
+                        seg_pam = [(mutation.dna[mutation.pam: mutation.pam + 2], pam_font), pam_mut_seg]
+                        mod_dna3 = 2
+                    elif mode == 2 and mutation.distance_from_pam == 3:  # we mutated the first two chars
+                        seg_pam = [pam_mut_seg, (mutation.dna[mutation.pam + 2: mutation.pam + 3], pam_font)]
+                        mod_dna2 = 1
+                    else: # we mutated the seed
+                        seg_pam = [(mutation.dna[mutation.pam: mutation.pam + 3], pam_font), blank]
+                seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
+
+                # if we modified the seed instead of the pam, this is what we need to do
+                update_dna_2 = False
+                if mutation.distance_from_pam is not None and not ((mode == 1 and mutation.distance_from_pam == 3) or (
+                        mode == 2 and mutation.distance_from_pam == 3)) and mutation.distance_from_pam > 0:
+                    update_dna_2 = True
+
+                if mutation.mutation_loc < mutation.pam:  # upstream mutation
+                    seg_dna1 = (
+                        mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.mutation_loc], dna_font)
+                    if update_dna_2:
+                        seg_dna2 = [(mutation.dna[
+                                     mutation.mutation_loc + 3:mutation.pam - mutation.distance_from_pam + mode],
+                                     dna_font), pam_mut_seg, (
+                                        mutation.dna[mutation.pam - mutation.distance_from_pam + mode + 3:mutation.pam],
+                                        dna_font)]
+                    else:
+                        seg_dna2 = [(mutation.dna[mutation.mutation_loc + 3:mutation.pam - mod_dna2], dna_font), blank,
+                                    blank]
+                    seg_dna3 = (mutation.dna[mutation.pam + 3 + mod_dna3:len(mutation.dna) - len(third)], dna_font)
+                    sheet1.write_rich_text(i + column_pos, 8, (
+                        seg_first, seg_guide, seg_second, seg_dna1, seg_mutation, seg_dna2[0], seg_dna2[1], seg_dna2[2],
+                        seg_pam[0], seg_pam[1], seg_dna3, seg_third))
+                else:  # downstream mutation
+                    if update_dna_2:
+                        seg_dna1 = [(mutation.dna[
+                                     len(first) + config.GUIDE_LENGTH + len(second):mutation.pam - mod_dna2], dna_font),
+                                    blank, blank]
+                    else:
+                        seg_dna1 = [(mutation.dna[
+                                     len(first) + config.GUIDE_LENGTH + len(second):mutation.pam - mod_dna2], dna_font),
+                                    blank, blank]
+                    seg_dna2 = (mutation.dna[mutation.pam + 3 + mod_dna3:mutation.mutation_loc], dna_font)
+                    seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
+                    sheet1.write_rich_text(i + column_pos, 8, (
+                        seg_first, seg_guide, seg_second, seg_dna1[0], seg_dna1[1], seg_dna1[2], seg_pam[0], seg_pam[1],
+                        seg_dna2, seg_mutation, seg_dna3, seg_third))
+
+                if (mutation.complement):
+                    mutation.dna = invert_dna(mutation.dna)
+
+            column_pos += i + 2
+
+            sheet1.write(column_pos, 0, "Original Sequence")
+            column_pos += 1
+            sheet1.write(column_pos, 0, dna)
+            column_pos += 1
+            sheet1.write(column_pos, 0, "Original Gene")
+            column_pos += 1
+            sheet1.write(column_pos, 0, dna[config.GENE_START_BUFFER:-config.GENE_END_BUFFER])
+            # NOTE // Please check in and make sure that crops correctly
+            column_pos += 2
+            # Print both full sequence, as well as just the gene - the thousand surrounding pairs
+
+            # Saves the file
+
+            wb.save(output_file + '.xls')
+
+    if (config.PRINT_GUIDE_LIBRARY):
+
+        wb = Workbook()
+
+        column_pos = 0
+
+        sheet2 = wb.add_sheet('Guide Library')
+        sheet2.write(column_pos, 0, 'GENE ID')
+        sheet2.write(column_pos, 1, 'GUIDE ID')
+        sheet2.write(column_pos, 2, 'GUIDE')
+        sheet2.write(column_pos, 3, 'MUTATION POSITION')
+        sheet2.write(column_pos, 4, 'INVERSE COMPLIMENT')
+        sheet2.write(column_pos, 5, 'GUIDE PRIORITY')
+        sheet2.write(column_pos, 6, 'INVERSE COMPLIMENT PRIORITY')
+        sheet2.write(column_pos, 7, 'GUIDE WITH HEADER')
+        sheet2.write(column_pos, 8, 'INVERSE COMPLIMENT WITH HEADER')
+
+        column_pos += 2
+
+        extra_font = xlwt.easyfont('color_index gray50')
+        guide_font = xlwt.easyfont('color_index blue')
+
+        for g in range(len(results_list)):
+
+            frontmatter = frontmatter_list[g]
+            results = results_list[g]
+            dna = dna_list[g]
+
+            cur_id = (str(frontmatter).partition(' ')[0])[1:]
+
+            guides = []
+            inv_guides = []
+
+            i = 0
+            for i, mutation in enumerate(results):
+                sheet2.write(i + column_pos, 0, cur_id)
+                sheet2.write(i + column_pos, 1, cur_id + "_" + str(i))
+                sheet2.write(i + column_pos, 3, mutation.mutation_loc)
+
+                # Temp priority system for testing
+                sheet2.write(i + column_pos, 5, i)
+
+                guide = (mutation.dna[len(first):len(first) + config.GUIDE_LENGTH], guide_font)
+                inv_guide = (invert_dna(mutation.dna[len(first):len(first) + config.GUIDE_LENGTH]), guide_font)
+
+                prefix = config.GUIDE_LIBRARY_STRAND_PREFIX
+                inv_prefix = config.GUIDE_LIBRARY_INVERSE_PREFIX
+                _blank = ("", dna_font)
+                if mutation.mutation_loc < mutation.pam:  # upstream mutation
+                    _prefix = (prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 2, (_blank, guide))
+                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, guide))
+                    guides.append(_prefix[0] + guide[0])
+
+                    _prefix = (inv_prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 4, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 8, (_prefix, inv_guide))
+                    inv_guides.append(_prefix[0] + inv_guide[0])
+                else:  # downstream mutation
+                    _prefix = (inv_prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 2, (_blank, guide))
+                    sheet2.write_rich_text(i + column_pos, 7, (_prefix, guide))
+                    inv_guides.append(_prefix[0] + guide[0])
+
+                    _prefix = (prefix, dna_font)
+                    sheet2.write_rich_text(i + column_pos, 4, (_blank, inv_guide))
+                    sheet2.write_rich_text(i + column_pos, 8, (_prefix, inv_guide))
+                    guides.append(_prefix[0] + inv_guide[0])
+
+            column_pos += i + 2
+
+        # END OF FILE LINE FOR READER
+        sheet2.write(column_pos, 0, config.GUIDE_LIBRARY_EOF)
+
+        # PROBABLY REDO THIS
+        # Dont use json, figure out how to read the excel back in directly
+        # Formatting the output data for readability
+
+        wb.save(config.GUIDE_LIBRARY_OUTPUT_FILE + '.xls')
+
+        # out_data = ["Guides", guides, "Guides inverted", inv_guides]
+        # with open(config.GUIDE_LIBRARY_OUTPUT_FILE+".json", "w") as file:
+        #    json.dump(out_data, file)'''
 
 
 # Checks if no arguments are given, will set input and output files to the default
