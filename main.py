@@ -430,8 +430,11 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     # 2a a. To make the donor, take 132 base pairs surrounding the mutations (either centered around both the main mutation and the PAM mutation, or if easier could just center all the donors for a given guide around the PAM).
     # PAM + 10 is the center of the guide + 66 on each side of it
-    candidate_start = pam - 10 - 66  # pam - UPSTREAM
-    candidate_end = pam - 10 + 66  # pam + 3 + DOWNSTREAM
+
+    half = int(config.BP_LENGTH / 2)
+
+    candidate_start = pam - half  # pam - UPSTREAM
+    candidate_end = pam + half  # pam + 3 + DOWNSTREAM
     candidate_dna = dna[candidate_start:candidate_end]  # this is the 132 base pairs surrounding the middle of the guide
 
     # 2)  Find the amino acid you want to mutate
@@ -556,9 +559,8 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         offset = 0
         if (not null_active):
             mutation_location = mutation_locations[i]
-            seed_mutation = (mutation_location - 76 + pam > pam - 10) and (mutation_location < 76) # the mutation is in the seed
 
-        pam_loc_in_candidate = 76  # this is always true
+        pam_loc_in_candidate = pam - candidate_start
         # pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
         pam_string = dna[pam:pam + 3]
         mutation_successful = False
@@ -702,7 +704,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         else:
             mutation_successful = True  # we mutated the PAM already, so we didn't need to do another mutation
 
-        if mutation_successful or seed_mutation:
+        if mutation_successful:
 
             if d_pam == None: # mutation was in the pam
                 d_pam = 0
@@ -718,6 +720,9 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 #                mutation_location = len(candidate_dna) - mutation_location - 3
 #                pam_loc = len(candidate_dna) - pam_loc - 3
 
+            size_of_first_sequence = len(config.first_sequence)
+            size_of_second_sequence = len(config.second_sequence)
+            total_to_add = size_of_first_sequence + size_of_second_sequence + 20
             candidate_dna = insert_extra_sequence(candidate_dna, guide)
             # we just added 52 + 20 (guide) basepairs
             # guide pam mutation mutationloc dna
@@ -727,7 +732,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
             if mutant[1] == '*':
                 mutant[1] = actual_mutation[1]
 
-            result = MutationTracker(guide, pam_loc + 72, mutant, mutation_location + 72, candidate_dna, complement, pam,
+            result = MutationTracker(guide, pam_loc + total_to_add, mutant, mutation_location + total_to_add, candidate_dna, complement, pam,
                                      d_pam, pam_string, decision_path)
 
             # If using the guide library and only allowing one mutation per guide, automatically reject any guide not present in the library
@@ -860,13 +865,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
 
                 mode = mutation.pam_location_in_gene % 3  # this is which "mode" we were in, it gives us the offset from pam start
                 seed_mutation = None
-
-                '''if mutation.distance_from_pam != 0:  # the og mutation did not take care of the pam for us
-                    start_of_pam_mutation = mutation.pam + mutation.distance_from_pam
-                    seed_mutation = (mutation.dna[start_of_pam_mutation:start_of_pam_mutation + 3], pam_mut_font)
-                else: # the og mutation took care of the pam for us
-                    start_of_pam_mutation = mutation.pam
-                    seed_mutation = blank'''
 
                 start_of_pam_mutation = mutation.pam + mutation.distance_from_pam
                 seed_mutation = (mutation.dna[start_of_pam_mutation:start_of_pam_mutation + 3], pam_mut_font)
