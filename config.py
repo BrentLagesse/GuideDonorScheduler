@@ -11,13 +11,13 @@ mutations_to_attempt = dict()
 
 #fake mutations for testing
 #mutations_to_attempt['glu'] = 'arg'
-mutations_to_attempt['asp'] = 'arg'
+#mutations_to_attempt['asp'] = 'arg'
 #mutations_to_attempt['NULL'] = 'NULL'
 #mutations_to_attempt['glu'] = 'lys'
 #mutations_to_attempt['gly'] = 'phe'
 #mutations_to_attempt['glu'] = 'thr'
 #mutations_to_attempt['asn'] = 'arg'
-#mutations_to_attempt['*'] = 'arg'
+mutations_to_attempt['*'] = 'val'
 
 BP_LENGTH = 132
 
@@ -40,8 +40,7 @@ GUIDE_LIBRARY_EOF = "END"
 DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
                     'S288C_YIL144W_NDC80_flanking.fsa',
                     'NUF2_1000flanking.fsa',
-                    'TRP1_1000flanking.fsa'] # Set this up
-
+                    'TRP1_1000flanking.fsa', 'S288C_YBL034C_STU1_flanking.fsa', 'S288C_YLR045C_STU2_flanking.fsa'] # Set this up
 
 DEFAULT_OUT_FILE = "Mutation_Results_Combined_Output"
 
