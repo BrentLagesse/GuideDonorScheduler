@@ -11,13 +11,13 @@ mutations_to_attempt = dict()
 
 #fake mutations for testing
 #mutations_to_attempt['glu'] = 'arg'
-#mutations_to_attempt['asp'] = 'arg'
+mutations_to_attempt['asp'] = 'arg'
 #mutations_to_attempt['NULL'] = 'NULL'
 #mutations_to_attempt['glu'] = 'lys'
 #mutations_to_attempt['gly'] = 'phe'
 #mutations_to_attempt['glu'] = 'thr'
 #mutations_to_attempt['asn'] = 'arg'
-mutations_to_attempt['*'] = 'val'
+#mutations_to_attempt['*'] = 'nns'
 
 BP_LENGTH = 132
 
@@ -144,6 +144,7 @@ cys = ['TGT', 'TGC']
 trp = ['TGG']
 arg = ['AGA', 'CGC', 'CGA', 'CGG', 'CGT', 'AGG']
 gly = ['GGT', 'GGC', 'GGA', 'GGG']
+nns = ['NNS']
 stop = ['TAA', 'TAG', 'TGA']
 
 # Kill mutation
