@@ -411,6 +411,12 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = create_guides(dna, pam, complement)
+    rank = int(get_rank(guide)) # get the rank of the current guide
+
+    # if rank is less than the threshold we skip this mutation
+    # if rank is -1 (meaning the guide wasn't found in the file) we go ahead and do the mutation
+    if (rank != -1 and rank < config.RANK_THRESHOLD):
+        return None
 
     # If using the guide library, automatically reject any guide not present in the library
     if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
@@ -418,12 +424,6 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
             print("Failed to find guide within guide library")
         gs.failed_due_to_guide_library += 1
         return None
-
-    # If we are on the reverse compliment, invert the guide // NOTE this might not work yet
-    #    if (complement):
-    #        guide = invert_dna(guide)
-
-    # introduce mutation
 
     # 2a a. To make the donor, take 132 base pairs surrounding the mutations (either centered around both the main mutation and the PAM mutation, or if easier could just center all the donors for a given guide around the PAM).
     # PAM + 10 is the center of the guide + 66 on each side of it
@@ -435,8 +435,6 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     # 2)  Find the amino acid you want to mutate
 
-
-    first_amino_acid_loc = int()
 
     # figure out the pam amino acid situation (does it split, and if so where)
     # 0 --> NGG
@@ -472,11 +470,6 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
         candidate_dnas.append(candidate_dna)
     else:
         null_active = False
-
-# Check for true or flase
-    # if number < x and match guide
-    #skip
-
 
     if (not null_active):
         # Setting up for multiple potentials
@@ -571,13 +564,13 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
             actual_mutation = mutation_acids[i]
 
         pam_loc_in_candidate = pam - candidate_start
-        # pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
         pam_string = dna[pam:pam + 3]
         mutation_successful = False
         make_pam_mutation = False
         decision_path += "Done Making OG Mutation. "
 
         # Decide if we need to make pam/seed mutation. OG mutation might have not disrupted the pam
+        # or might have turned the pam into NGA/NAG (top strand) and NTC/NCT (bottom strand)
         if complement:
             if pam_case == 0:
                 if (pam_string.startswith('CC')) or (pam_string.startswith('TC')) or (pam_string.startswith('CT')):
@@ -873,7 +866,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
 
                 if (mutation.complement):
                     pass
-                    # mutation.dna = invert_dna(mutation.dna)
 
                 # Get the extra fonts
                 seg_first = (mutation.dna[0:len(first)], extra_font)
@@ -1185,6 +1177,47 @@ def execute_program():
     if config.OUTPUT_TO_ONE_FILE:
         write_results(frontmatter, combined_mutation_page, dna_list)
 
+# This method takes in a guide and finds that guide's rank in the rank file
+# and returns it. If the guide is not in the file, returns -1.
+def get_rank(guide):
+    workbook = xlrd.open_workbook(config.RANK_FILE + ".xls")
+    worksheet = workbook.sheet_by_index(0)
+
+    # rank files can be different format so we want to find the index values of "Guide" and "Rank" column
+    # get the index values of guide and rank
+    guide_index = -1
+    rank_index = -1
+    reading = True
+    i = 0
+    while reading:
+        column_name = worksheet.cell_value(0, i)
+
+        if column_name != "":
+            if column_name == config.GUIDE_COLUMN_IN_RANK_FILE:
+                guide_index = i
+            elif column_name == config.RANK_COLUMN_IN_RANK_FILE:
+                rank_index = i
+
+            i += 1
+
+            # we found the indicies, stop searching
+            if guide_index != -1 and rank_index != -1:
+                reading = False
+
+    # now look for the guide
+    reading = True
+    i = 1
+    while (reading):
+        guide_from_file = worksheet.cell_value(i, guide_index)
+
+        if (guide_from_file != ""):
+            if (guide_from_file == guide):
+                return worksheet.cell_value(i, rank_index) # return the rank
+
+            if (guide_from_file == config.GUIDE_LIBRARY_EOF):
+                return -1 # guide wasn't in the file
+
+        i += 1
 
 def test_execution():
     global guide_lib

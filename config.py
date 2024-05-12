@@ -4,22 +4,30 @@
 #
 # ----------------------------------------------------
 
+# This dictionary stores the mutations to attempt
 mutations_to_attempt = dict()
 
-
-# TESTING
-
-#fake mutations for testing
-#mutations_to_attempt['glu'] = 'arg'
+# To add mutations refer to template:
+# mutations_to_attempt['mutation_from'] = 'mutation_to'
+# Use '*' in place of 'mutation_from' to mutate every acid
 mutations_to_attempt['asp'] = 'arg'
-#mutations_to_attempt['NULL'] = 'NULL'
-#mutations_to_attempt['glu'] = 'lys'
-#mutations_to_attempt['gly'] = 'phe'
-#mutations_to_attempt['glu'] = 'thr'
-#mutations_to_attempt['asn'] = 'arg'
-#mutations_to_attempt['*'] = 'nns'
 
-BP_LENGTH = 132
+
+BP_LENGTH = 132 # This changes the length of the donor sequence
+
+# This is the threshold value of the rank.
+# Guides that have rank of less than this threshold value will be ignored
+# Rank that is greater than or equal to this threshold value will be used to perform the mutation
+RANK_THRESHOLD = 2
+
+# The rank file must have two columns titled "Guide" and "Rank" that will have guide and its rank
+# in that column. If the title for guide column is something different change the "GUIDE_COLUMN_IN_RANK_FILE".
+# If the title of rank column is something different change the "RANK_COLUMN_IN_RANK_FILE".
+# The order of the guide and rank column doesn't have to be consistent... the guide and rank columns can be
+# anywhere in the file as long as the title of them is in the top row and also have to make sure
+# the last entry in the guide column has "END" to indicate end of the file.
+GUIDE_COLUMN_IN_RANK_FILE = 'Guide'
+RANK_COLUMN_IN_RANK_FILE = 'Rank'
 
 # ----------------------------------------------------
 #
@@ -30,6 +38,7 @@ BP_LENGTH = 132
 # WARNING !! Guide Library ouput files will be overwritten when output,
 # be sure to move any modifications to input to avoid losing data.
 
+RANK_FILE = 'guide_only_ranked_ordered'
 GUIDE_LIBRARY_OUTPUT_FILE = 'Guide_Library_Output'
 GUIDE_LIBRARY_INPUT_FILE = 'Guide_Library_Input'
 USE_GUIDE_LIBRARY = False
