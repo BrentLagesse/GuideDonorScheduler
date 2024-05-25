@@ -33,6 +33,8 @@ class GlobalStats:
     failed_due_to_mutate: int
     failed_due_to_pam: int
     failed_due_to_guide_library: int
+    failed_due_to_rank: int
+    guides_used_from_rank_file: int
     succeeded: int
 
 
@@ -46,7 +48,7 @@ class PrebuiltGuide:
     compliment: bool
 
 
-gs = GlobalStats(0, 0, 0, 0)
+gs = GlobalStats(0, 0, 0, 0, 0, 0)
 guide_lib = []
 
 # set up the argument parser so we can accept commandline arguments
@@ -411,12 +413,17 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = create_guides(dna, pam, complement)
-    rank = int(get_rank(guide)) # get the rank of the current guide
 
-    # if rank is less than the threshold we skip this mutation
-    # if rank is -1 (meaning the guide wasn't found in the file) we go ahead and do the mutation
-    if (rank != -1 and rank < config.RANK_THRESHOLD):
-        return None
+    if (config.USE_RANK):
+        rank = int(get_rank(guide)) # get the rank of the current guide
+
+        # if rank is less than the threshold we skip this mutation
+        # if rank is -1 (meaning the guide wasn't found in the file) we go ahead and do the mutation
+        if (rank != -1 and rank < config.RANK_THRESHOLD):
+            gs.failed_due_to_rank += 1
+            return None
+        else:
+            gs.guides_used_from_rank_file += 1
 
     # If using the guide library, automatically reject any guide not present in the library
     if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
@@ -794,9 +801,12 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
         if config.PRINT_MUTATION_SUCCESS_COUNTS:
             print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
             print('failed due to pam: ' + str(gs.failed_due_to_pam))
+            print('failed due to rank: ' + str(gs.failed_due_to_rank))
             if (config.USE_GUIDE_LIBRARY):
                 print('failed due to guide library: ' + str(gs.failed_due_to_guide_library))
             print('succeeded: ' + str(gs.succeeded))
+            print('\nGuides used from the rank file: ' + str(gs.guides_used_from_rank_file))
+            print('Total guides in the file: ' + str(get_total_guides_from_file()))
 
         column_pos = 0
 
@@ -980,7 +990,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
             # Print both full sequence, as well as just the gene - the thousand surrounding pairs
 
             # Saves the file
-
             wb.save(output_file + '.xls')
 
     if (config.PRINT_GUIDE_LIBRARY):
@@ -1176,6 +1185,40 @@ def execute_program():
 
     if config.OUTPUT_TO_ONE_FILE:
         write_results(frontmatter, combined_mutation_page, dna_list)
+
+# This method gets the total number of guides in a file
+def get_total_guides_from_file():
+    workbook = xlrd.open_workbook(config.RANK_FILE + ".xls")
+    worksheet = workbook.sheet_by_index(0)
+
+    # Get the index of guide column first
+    guide_index = -1
+    reading = True
+    i = 0
+    while reading:
+        column_name = worksheet.cell_value(0, i)
+
+        if column_name != "":
+            if column_name == config.GUIDE_COLUMN_IN_RANK_FILE:
+                guide_index = i
+
+            i += 1
+
+            # we found the indicies, stop searching
+            if guide_index != -1:
+                reading = False
+
+    # now count the guides
+    reading = True
+    i = 1
+    while (reading):
+        guide_from_file = worksheet.cell_value(i, guide_index)
+
+        # We're at the end
+        if (guide_from_file == "END"):
+            return i - 1
+
+        i += 1
 
 # This method takes in a guide and finds that guide's rank in the rank file
 # and returns it. If the guide is not in the file, returns -1.
