@@ -12,13 +12,15 @@ mutations_to_attempt = dict()
 # Use '*' in place of 'mutation_from' to mutate every acid
 mutations_to_attempt['asp'] = 'arg'
 
-
 BP_LENGTH = 132 # This changes the length of the donor sequence
 
 # This is the threshold value of the rank.
 # Guides that have rank of less than this threshold value will be ignored
 # Rank that is greater than or equal to this threshold value will be used to perform the mutation
-RANK_THRESHOLD = 2
+RANK_THRESHOLD = 0
+
+# This variable controls whether to use ranks to do the mutations or not
+USE_RANK = True
 
 # The rank file must have two columns titled "Guide" and "Rank" that will have guide and its rank
 # in that column. If the title for guide column is something different change the "GUIDE_COLUMN_IN_RANK_FILE".
@@ -26,8 +28,8 @@ RANK_THRESHOLD = 2
 # The order of the guide and rank column doesn't have to be consistent... the guide and rank columns can be
 # anywhere in the file as long as the title of them is in the top row and also have to make sure
 # the last entry in the guide column has "END" to indicate end of the file.
-GUIDE_COLUMN_IN_RANK_FILE = 'Guide'
-RANK_COLUMN_IN_RANK_FILE = 'Rank'
+GUIDE_COLUMN_IN_RANK_FILE = 'Guide1'
+RANK_COLUMN_IN_RANK_FILE = 'Rank1'
 
 # ----------------------------------------------------
 #
@@ -38,7 +40,7 @@ RANK_COLUMN_IN_RANK_FILE = 'Rank'
 # WARNING !! Guide Library ouput files will be overwritten when output,
 # be sure to move any modifications to input to avoid losing data.
 
-RANK_FILE = 'guide_only_ranked_ordered'
+RANK_FILE = 'guide_only_ranked_ordered_mock'
 GUIDE_LIBRARY_OUTPUT_FILE = 'Guide_Library_Output'
 GUIDE_LIBRARY_INPUT_FILE = 'Guide_Library_Input'
 USE_GUIDE_LIBRARY = False
@@ -46,10 +48,12 @@ ONE_MUTATION_PER_GUIDE = True
 
 GUIDE_LIBRARY_EOF = "END"
 
-DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
+'''DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
                     'S288C_YIL144W_NDC80_flanking.fsa',
                     'NUF2_1000flanking.fsa',
-                    'TRP1_1000flanking.fsa'] # Set this up
+                    'TRP1_1000flanking.fsa'] # Set this up'''
+
+DEFAULT_IN_FILES = ['NUF2_1000flanking.fsa']
 
 DEFAULT_OUT_FILE = "Mutation_Results_Combined_Output"
 
