@@ -26,13 +26,15 @@ class MutationTracker:
     pam_location_in_gene: int
     distance_from_pam: int
     original_pam: str
-    justification: str # ISSUE - Have the output justify the decision path
+    justification: str
 
 @dataclass
 class GlobalStats:
     failed_due_to_mutate: int
     failed_due_to_pam: int
     failed_due_to_guide_library: int
+    failed_due_to_rank: int
+    guides_used_from_rank_file: int
     succeeded: int
 
 
@@ -46,7 +48,7 @@ class PrebuiltGuide:
     compliment: bool
 
 
-gs = GlobalStats(0, 0, 0, 0)
+gs = GlobalStats(0, 0, 0, 0, 0, 0)
 guide_lib = []
 
 # set up the argument parser so we can accept commandline arguments
@@ -58,13 +60,10 @@ args = argParser.parse_args()
 in_files = args.input
 out_base = args.output
 
-#amino_acid_number = 0  # Global variable
-
 # set up codon lookup table
 codons = dict()
 
 # all codons are defined in config.py in the CODON SETUP section
-
 codons['leu'] = config.leu
 codons['phe'] = config.phe
 codons['ile'] = config.ile
@@ -85,12 +84,15 @@ codons['cys'] = config.cys
 codons['trp'] = config.trp
 codons['arg'] = config.arg
 codons['gly'] = config.gly
+codons['nns'] = config.nns
 
 invert_mapping = dict()
 invert_mapping['T'] = 'A'
 invert_mapping['A'] = 'T'
 invert_mapping['G'] = 'C'
 invert_mapping['C'] = 'G'
+invert_mapping['N'] = 'R'
+invert_mapping['S'] = 'B'
 invert_mapping['Z'] = 'Z'  # FOR DEBUG
 
 string_to_acid = dict()
@@ -275,14 +277,13 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
 
     actual_mutation = [mutant[0], mutant[1]]
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc + 3]
-    # if first_amino_acid_loc > 76, we are replacing downstream
     if first_amino_acid_loc == mutation_location:  # we would be replacing the mutation
         if distance_from_pam <= 5:  # don't mutate
             if config.VERBOSE_EXECUTION:
                 print('we did not mutate the pam because the mutation was withing 5 base pairs of pam')
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
-            decision_path += "Couldn't Mutate " + amino_acid_str + "."
+            decision_path += "Couldn't Mutate " + amino_acid_str + ". "
             return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant, decision_path, mutation_location=mutation_location,
                                     distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
 
@@ -379,14 +380,14 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                 return False, None, None, actual_mutation, decision_path
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
-            decision_path += "Couldn't Mutate " + amino_acid_str + "."
+            decision_path += "Couldn't Mutate " + amino_acid_str + ". "
             return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant, decision_path, mutation_location=mutation_location,
                                         distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
 
     if config.VERBOSE_EXECUTION:
         print('Mutant was not desireable')
 
-    decision_path += "Couldn't Mutate " + amino_acid_str + "."
+    decision_path += "Couldn't Mutate " + amino_acid_str + ". "
     return False, None, None, actual_mutation, decision_path
 
 
@@ -397,10 +398,6 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
 def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     global gs
     global guide_lib
-
-    # Initilize here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    decision_path = ""
-    # Initilize here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     if pam == 1008:
         pass
@@ -417,18 +414,23 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     # 1c) Take the 20 bases upstream of the NGG and that is the guide.
     guide = create_guides(dna, pam, complement)
 
+    if (config.USE_RANK):
+        rank = int(get_rank(guide)) # get the rank of the current guide
+
+        # if rank is less than the threshold we skip this mutation
+        # if rank is -1 (meaning the guide wasn't found in the file) we go ahead and do the mutation
+        if (rank != -1 and rank < config.RANK_THRESHOLD):
+            gs.failed_due_to_rank += 1
+            return None
+        else:
+            gs.guides_used_from_rank_file += 1
+
     # If using the guide library, automatically reject any guide not present in the library
     if (config.USE_GUIDE_LIBRARY and not (is_guide_in_library(guide, guide_lib))):
         if config.VERBOSE_EXECUTION:
             print("Failed to find guide within guide library")
         gs.failed_due_to_guide_library += 1
         return None
-
-    # If we are on the reverse compliment, invert the guide // NOTE this might not work yet
-    #    if (complement):
-    #        guide = invert_dna(guide)
-
-    # introduce mutation
 
     # 2a a. To make the donor, take 132 base pairs surrounding the mutations (either centered around both the main mutation and the PAM mutation, or if easier could just center all the donors for a given guide around the PAM).
     # PAM + 10 is the center of the guide + 66 on each side of it
@@ -440,8 +442,6 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     # 2)  Find the amino acid you want to mutate
 
-
-    first_amino_acid_loc = int()
 
     # figure out the pam amino acid situation (does it split, and if so where)
     # 0 --> NGG
@@ -468,6 +468,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     candidate_dnas = []
     mutation_locations = []
     mutation_acids = []
+    comments = []
 
     # ISSUE 25 - Only mutate in the PAM/Seed if "NULL" mutation is active.
     # If "NULL" mutation is active we skip this section that does the original mutations
@@ -479,6 +480,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     if (not null_active):
         # Setting up for multiple potentials
+        decision_path = ''
         for ordering in range(2):
             if (ordering+order) % 2 == 0:  # only do upstream if we are still in the gene
                 if complement:   # we have fo fix up the first amino acid location if we are on the reverse
@@ -513,6 +515,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                         candidate_dnas.append(temp_candidate_dna)
                         mutation_locations.append(candidate_first_amino_acid_loc)
                         mutation_acids.append(actual_mutation)
+                        comments.append(decision_path)
                         if only_once:
                             break
 
@@ -547,6 +550,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                         candidate_dnas.append(temp_candidate_dna)
                         mutation_locations.append(candidate_first_amino_acid_loc)
                         mutation_acids.append(actual_mutation)
+                        comments.append(decision_path)
                         if only_once:
                             break
 
@@ -558,20 +562,22 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
             return None
 
     for i in range(len(candidate_dnas)):
-        decision_path += "Done Making OG Mutation. "
         candidate_dna = candidate_dnas[i]
+        decision_path = comments[i]
         offset = 0
+        d_pam = None
         if (not null_active):
             mutation_location = mutation_locations[i]
             actual_mutation = mutation_acids[i]
 
         pam_loc_in_candidate = pam - candidate_start
-        # pam_string = candidate_dna[pam_loc_in_candidate:pam_loc_in_candidate + 3]
         pam_string = dna[pam:pam + 3]
         mutation_successful = False
         make_pam_mutation = False
+        decision_path += "Done Making OG Mutation. "
 
         # Decide if we need to make pam/seed mutation. OG mutation might have not disrupted the pam
+        # or might have turned the pam into NGA/NAG (top strand) and NTC/NCT (bottom strand)
         if complement:
             if pam_case == 0:
                 if (pam_string.startswith('CC')) or (pam_string.startswith('TC')) or (pam_string.startswith('CT')):
@@ -795,9 +801,12 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
         if config.PRINT_MUTATION_SUCCESS_COUNTS:
             print('\nfailed due to mutate: ' + str(gs.failed_due_to_mutate))
             print('failed due to pam: ' + str(gs.failed_due_to_pam))
+            print('failed due to rank: ' + str(gs.failed_due_to_rank))
             if (config.USE_GUIDE_LIBRARY):
                 print('failed due to guide library: ' + str(gs.failed_due_to_guide_library))
             print('succeeded: ' + str(gs.succeeded))
+            print('\nGuides used from the rank file: ' + str(gs.guides_used_from_rank_file))
+            print('Total guides in the file: ' + str(get_total_guides_from_file()))
 
         column_pos = 0
 
@@ -852,8 +861,14 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                 sheet1.write(i + column_pos, 3, mutation.pam_location_in_gene + (
                             mutation.mutation_loc - mutation.pam) - config.GENE_START_BUFFER)
                 sheet1.write(i + column_pos, 4, mutation.complement)
-                sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - (
+
+                if mutation.complement:
+                    sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - (
+                            mutation.pam + 6))))  # 3 bp downstream of pam + the length of the mutation (3 bp)
+                else:
+                    sheet1.write(i + column_pos, 5, str(abs(mutation.mutation_loc - (
                             mutation.pam - 6))))  # 3 bp upstream of pam + the length of the mutation (3 bp)
+
                 sheet1.write(i + column_pos, 6, mutation.original_pam)
                 sheet1.write(i + column_pos, 7, abs(mutation.distance_from_pam))
                 sheet1.write(i + column_pos, 8, mutation.guide)
@@ -861,7 +876,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
 
                 if (mutation.complement):
                     pass
-                    # mutation.dna = invert_dna(mutation.dna)
 
                 # Get the extra fonts
                 seg_first = (mutation.dna[0:len(first)], extra_font)
@@ -976,7 +990,6 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
             # Print both full sequence, as well as just the gene - the thousand surrounding pairs
 
             # Saves the file
-
             wb.save(output_file + '.xls')
 
     if (config.PRINT_GUIDE_LIBRARY):
@@ -1173,6 +1186,81 @@ def execute_program():
     if config.OUTPUT_TO_ONE_FILE:
         write_results(frontmatter, combined_mutation_page, dna_list)
 
+# This method gets the total number of guides in a file
+def get_total_guides_from_file():
+    workbook = xlrd.open_workbook(config.RANK_FILE + ".xls")
+    worksheet = workbook.sheet_by_index(0)
+
+    # Get the index of guide column first
+    guide_index = -1
+    reading = True
+    i = 0
+    while reading:
+        column_name = worksheet.cell_value(0, i)
+
+        if column_name != "":
+            if column_name == config.GUIDE_COLUMN_IN_RANK_FILE:
+                guide_index = i
+
+            i += 1
+
+            # we found the indicies, stop searching
+            if guide_index != -1:
+                reading = False
+
+    # now count the guides
+    reading = True
+    i = 1
+    while (reading):
+        guide_from_file = worksheet.cell_value(i, guide_index)
+
+        # We're at the end
+        if (guide_from_file == "END"):
+            return i - 1
+
+        i += 1
+
+# This method takes in a guide and finds that guide's rank in the rank file
+# and returns it. If the guide is not in the file, returns -1.
+def get_rank(guide):
+    workbook = xlrd.open_workbook(config.RANK_FILE + ".xls")
+    worksheet = workbook.sheet_by_index(0)
+
+    # rank files can be different format so we want to find the index values of "Guide" and "Rank" column
+    # get the index values of guide and rank
+    guide_index = -1
+    rank_index = -1
+    reading = True
+    i = 0
+    while reading:
+        column_name = worksheet.cell_value(0, i)
+
+        if column_name != "":
+            if column_name == config.GUIDE_COLUMN_IN_RANK_FILE:
+                guide_index = i
+            elif column_name == config.RANK_COLUMN_IN_RANK_FILE:
+                rank_index = i
+
+            i += 1
+
+            # we found the indicies, stop searching
+            if guide_index != -1 and rank_index != -1:
+                reading = False
+
+    # now look for the guide
+    reading = True
+    i = 1
+    while (reading):
+        guide_from_file = worksheet.cell_value(i, guide_index)
+
+        if (guide_from_file != ""):
+            if (guide_from_file == guide):
+                return worksheet.cell_value(i, rank_index) # return the rank
+
+            if (guide_from_file == config.GUIDE_LIBRARY_EOF):
+                return -1 # guide wasn't in the file
+
+        i += 1
 
 def test_execution():
     global guide_lib
