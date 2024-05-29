@@ -48,12 +48,10 @@ ONE_MUTATION_PER_GUIDE = True
 
 GUIDE_LIBRARY_EOF = "END"
 
-'''DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
+DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
                     'S288C_YIL144W_NDC80_flanking.fsa',
                     'NUF2_1000flanking.fsa',
-                    'TRP1_1000flanking.fsa'] # Set this up'''
-
-DEFAULT_IN_FILES = ['NUF2_1000flanking.fsa']
+                    'TRP1_1000flanking.fsa'] # Set this up
 
 DEFAULT_OUT_FILE = "Mutation_Results_Combined_Output"
 
