@@ -10,7 +10,7 @@ mutations_to_attempt = dict()
 # To add mutations refer to template:
 # mutations_to_attempt['mutation_from'] = 'mutation_to'
 # Use '*' in place of 'mutation_from' to mutate every acid
-mutations_to_attempt['asp'] = 'arg'
+mutations_to_attempt['NULL'] = 'NULL'
 
 BP_LENGTH = 132 # This changes the length of the donor sequence
 
@@ -20,7 +20,7 @@ BP_LENGTH = 132 # This changes the length of the donor sequence
 RANK_THRESHOLD = 0
 
 # This variable controls whether to use ranks to do the mutations or not
-USE_RANK = True
+USE_RANK = False
 
 # The rank file must have two columns titled "Guide" and "Rank" that will have guide and its rank
 # in that column. If the title for guide column is something different change the "GUIDE_COLUMN_IN_RANK_FILE".
