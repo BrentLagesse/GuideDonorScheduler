@@ -469,12 +469,14 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     mutation_locations = []
     mutation_acids = []
     comments = []
+    actual_mutation = []
 
     # ISSUE 25 - Only mutate in the PAM/Seed if "NULL" mutation is active.
     # If "NULL" mutation is active we skip this section that does the original mutations
     if (mutant[0] == 'NULL' and mutant[1] == 'NULL'):
         null_active = True;
         candidate_dnas.append(candidate_dna)
+        actual_mutation = ['NULL', 'NULL']
     else:
         null_active = False
 
@@ -563,12 +565,13 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     for i in range(len(candidate_dnas)):
         candidate_dna = candidate_dnas[i]
-        decision_path = comments[i]
         offset = 0
+        decision_path = ''
         d_pam = None
         if (not null_active):
             mutation_location = mutation_locations[i]
             actual_mutation = mutation_acids[i]
+            decision_path = comments[i]
 
         pam_loc_in_candidate = pam - candidate_start
         pam_string = dna[pam:pam + 3]
@@ -883,9 +886,13 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                 seg_second = (mutation.dna[len(first) + config.GUIDE_LENGTH:len(first) + config.GUIDE_LENGTH + len(second)],
                     extra_font)
                 seg_third = (mutation.dna[len(mutation.dna) - len(third):], extra_font)
-
-                og_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3], mutation_font)
                 blank = ('', pam_font)
+
+                # If mutation is NULL, we don't need to show og
+                if mutation.mutation[0] == 'NULL':
+                    og_mutation = blank
+                else:
+                    og_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3], mutation_font)
 
                 mode = mutation.pam_location_in_gene % 3  # this is which "mode" we were in, it gives us the offset from pam start
                 seed_mutation = None
