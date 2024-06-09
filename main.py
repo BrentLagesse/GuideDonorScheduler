@@ -749,7 +749,13 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
             # guide pam mutation mutationloc dna
             # if we used a wildcard, replace it with what we actually mutated
 
-            result = MutationTracker(guide, pam_loc + total_to_add, actual_mutation, mutation_location + total_to_add, candidate_dna, complement, pam,
+            # Manually set og mutation location so it doesn't mess up the output.
+            if (actual_mutation[0] == "NULL"):
+                mutation_location = size_of_first_sequence + size_of_second_sequence + len(guide)
+            else:
+                mutation_location += total_to_add
+
+            result = MutationTracker(guide, pam_loc + total_to_add, actual_mutation, mutation_location, candidate_dna, complement, pam,
                                      d_pam, pam_string, decision_path)
 
             # If using the guide library and only allowing one mutation per guide, automatically reject any guide not present in the library
@@ -891,8 +897,10 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                 # If mutation is NULL, we don't need to show og
                 if mutation.mutation[0] == 'NULL':
                     og_mutation = blank
+                    og_mutation_offset = 0;
                 else:
-                    og_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc + 3], mutation_font)
+                    og_mutation_offset = 3
+                    og_mutation = (mutation.dna[mutation.mutation_loc: mutation.mutation_loc + og_mutation_offset], mutation_font)
 
                 mode = mutation.pam_location_in_gene % 3  # this is which "mode" we were in, it gives us the offset from pam start
                 seed_mutation = None
@@ -932,7 +940,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                 if mutation.mutation_loc <= mutation.pam: # upstream mutation
                     if start_of_pam_mutation > mutation.pam and start_of_pam_mutation > mutation.mutation_loc: # seed mutation is after the pam and after og
                         seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.mutation_loc], dna_font)
-                        seg_dna2 = (mutation.dna[mutation.mutation_loc + 3:mutation.pam], dna_font)
+                        seg_dna2 = (mutation.dna[mutation.mutation_loc + og_mutation_offset:mutation.pam], dna_font)
                         seg_dna3 = (mutation.dna[mutation.pam + 3: start_of_pam_mutation], dna_font)
                         seg_dna4 = (mutation.dna[start_of_pam_mutation + 3:len(mutation.dna) - len(third)], dna_font)
                         sheet1.write_rich_text(i + column_pos, 9, (
@@ -940,7 +948,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                             seg_dna3, seed_mutation, seg_dna4, seg_third))
                     elif start_of_pam_mutation > mutation.mutation_loc and start_of_pam_mutation <= mutation.pam: # seed mutation is between og and pam
                         seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.mutation_loc], dna_font)
-                        seg_dna2 = (mutation.dna[mutation.mutation_loc + 3:start_of_pam_mutation], dna_font)
+                        seg_dna2 = (mutation.dna[mutation.mutation_loc + og_mutation_offset:start_of_pam_mutation], dna_font)
                         seg_dna3 = (mutation.dna[start_of_pam_mutation + 3: mutation.pam], dna_font)
                         seg_dna4 = (mutation.dna[mutation.pam + 3 :len(mutation.dna) - len(third)], dna_font)
                         sheet1.write_rich_text(i + column_pos, 9, (
@@ -949,7 +957,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                     elif start_of_pam_mutation < mutation.mutation_loc and start_of_pam_mutation < mutation.pam: # seed mutation is before the og and pam
                         seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):start_of_pam_mutation], dna_font)
                         seg_dna2 = (mutation.dna[start_of_pam_mutation + 3:mutation.mutation_loc], dna_font)
-                        seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:mutation.pam], dna_font)
+                        seg_dna3 = (mutation.dna[mutation.mutation_loc + og_mutation_offset:mutation.pam], dna_font)
                         seg_dna4 = (mutation.dna[mutation.pam + 3:len(mutation.dna) - len(third)], dna_font)
                         sheet1.write_rich_text(i + column_pos, 9, (
                             seg_first, seg_guide, seg_second, seg_dna1, seed_mutation, seg_dna2, og_mutation,
@@ -959,7 +967,7 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                         seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):start_of_pam_mutation], dna_font)
                         seg_dna2 = (mutation.dna[start_of_pam_mutation + 3:mutation.pam], dna_font)
                         seg_dna3 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
-                        seg_dna4 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
+                        seg_dna4 = (mutation.dna[mutation.mutation_loc + og_mutation_offset:len(mutation.dna) - len(third)], dna_font)
                         sheet1.write_rich_text(i + column_pos, 9, (
                             seg_first, seg_guide, seg_second, seg_dna1, seed_mutation, seg_dna2, seg_pam,
                             seg_dna3, og_mutation, seg_dna4, seg_third))
@@ -967,14 +975,14 @@ def write_results(frontmatter_list, results_list, dna_list, use_output_file=True
                         seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
                         seg_dna2 = (mutation.dna[mutation.pam + 3:start_of_pam_mutation], dna_font)
                         seg_dna3 = (mutation.dna[start_of_pam_mutation + 3:mutation.mutation_loc], dna_font)
-                        seg_dna4 = (mutation.dna[mutation.mutation_loc + 3:len(mutation.dna) - len(third)], dna_font)
+                        seg_dna4 = (mutation.dna[mutation.mutation_loc + og_mutation_offset:len(mutation.dna) - len(third)], dna_font)
                         sheet1.write_rich_text(i + column_pos, 9, (
                             seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, seed_mutation,
                             seg_dna3, og_mutation, seg_dna4, seg_third))
                     elif start_of_pam_mutation > mutation.pam and start_of_pam_mutation >= mutation.mutation_loc: # seed mutation is after the pam and after og
                         seg_dna1 = (mutation.dna[len(first) + config.GUIDE_LENGTH + len(second):mutation.pam], dna_font)
                         seg_dna2 = (mutation.dna[mutation.pam + 3:mutation.mutation_loc], dna_font)
-                        seg_dna3 = (mutation.dna[mutation.mutation_loc + 3:start_of_pam_mutation], dna_font)
+                        seg_dna3 = (mutation.dna[mutation.mutation_loc + og_mutation_offset:start_of_pam_mutation], dna_font)
                         seg_dna4 = (mutation.dna[start_of_pam_mutation + 3:len(mutation.dna) - len(third)], dna_font)
                         sheet1.write_rich_text(i + column_pos, 9, (
                             seg_first, seg_guide, seg_second, seg_dna1, seg_pam, seg_dna2, og_mutation,
