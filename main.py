@@ -2,11 +2,12 @@ import argparse
 import re
 from dataclasses import dataclass
 import sys
-import json
 
-# xlrd, xlutils and xlwt modules need to be installed.  
+
+# fastaparser, xlrd, xlutils and xlwt modules need to be installed.
 # Can be done via pip install <module>
 
+import fastaparser
 import xlwt
 from xlwt import Workbook
 import xlrd
@@ -85,6 +86,7 @@ codons['trp'] = config.trp
 codons['arg'] = config.arg
 codons['gly'] = config.gly
 codons['nns'] = config.nns
+codons['stop'] = config.stop
 
 invert_mapping = dict()
 invert_mapping['T'] = 'A'
@@ -110,8 +112,22 @@ def get_dna():
     # If the input file fails to load, the program exits with an error message
     try:
         # open the input files and insert into input_data
+        frontmatter = []
         for line in in_files:
-            input_data.append(open(line, 'r'))
+            if config.KILL_MODE:
+                r = fastaparser.Reader(open(line, 'r'))
+                for seq in r:
+                    # seq is a FastaSequence object
+                    # print('ID:', seq.id)
+                    # print('Description:', seq.description)
+                    # print('Sequence:', seq.sequence_as_string())
+                    # print()
+                    input_data.append(seq.sequence_as_string())
+                    frontmatter.append(seq.id)
+
+                return frontmatter, input_data, None
+            else:
+                input_data.append(open(line, 'r'))
     except:
         if (config.QUIT_ON_NO_DATA):
             print("Opening DNA file failed, program exiting.")
@@ -178,8 +194,10 @@ def get_locations(dna):
 
     gg_locs = [loc.start() + config.GENE_START_BUFFER - 1 for loc in
                re.finditer('(?=GG)', gene_only)]  # minus one accounts for the N of NGG
-    cc_locs = [loc.start() + config.GENE_START_BUFFER for loc in
-               re.finditer('(?=CC)', gene_only)]
+    cc_locs = []
+    if not config.KILL_MODE:
+        cc_locs = [loc.start() + config.GENE_START_BUFFER for loc in
+                   re.finditer('(?=CC)', gene_only)]
     # Make sure its using nGG pams for reverse compliment, look into this and see why nCCs are used
 
     return [gg_locs, cc_locs]
@@ -399,7 +417,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     global gs
     global guide_lib
 
-    if pam == 1008:
+    if pam == config.GENE_START_BUFFER + 8:    # was 1008
         pass
     # it seems like we are only looking at the 6 upstream and 4 downstream amino acids
     UPSTREAM = (config.UP_ACIDS) * 3
@@ -1112,6 +1130,7 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
 
     mutations_output = []
     if not config.DEBUG_INVERSE:
+        mutation_count = 0
         for loc in _dna_locs:
             # I don't think we need to actually find the guides here since it is just pam - 20
             # guides = create_guides(dna, loc)
@@ -1120,8 +1139,12 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
             for m in config.mutations_to_attempt.items():
                 mutated_dna = create_mutations(_dna, loc, list(m), only_once=_only_once)
                 if mutated_dna is not None:
-                    for md in mutated_dna:
-                        mutations_output.append(md)
+                    mutation_count += 1
+    #                for md in mutated_dna:
+                    mutations_output.append(mutated_dna[0])   #This is returning 2 mutations even though it is only supposed to do 1 #FIXME
+
+            if config.KILL_MODE and mutation_count == config.MAX_PAMS:  # Talia only wants 3 pams to get a stop codon
+                break
 
 
     # class MutationTracker:
@@ -1178,12 +1201,15 @@ def execute_program():
             candidate_start = int(dna_locs[0]) - 10 - 66  # pam - UPSTREAM
             candidate_end = int(dna_locs[0]) - 10 + 66  # pam + 3 + DOWNSTREAM
             candidate_dna = dna[candidate_start:candidate_end]
+        if config.KILL_MODE:
+            all_mutations = get_all_mutations(dna_locs, [], dna, [], only_once=True)  # we don't need to do inverse because we can get 3 on the ,main side
+        else:
+            all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
 
-        all_mutations = get_all_mutations(dna_locs, inv_dna_locs, dna, inv_dna_full)
-
-        # NOTE // Kill guide is inserted as the very last one
-        if (len(all_mutations) > 0):
-            all_mutations.append(create_kill_guide(all_mutations[0]))
+        if not config.KILL_MODE:
+            # NOTE // Kill guide is inserted as the very last one
+            if (len(all_mutations) > 0):
+                all_mutations.append(create_kill_guide(all_mutations[0]))
 
         combined_mutation_page.append(all_mutations)
         # at this point, we have everything we need to output the results
@@ -1294,11 +1320,10 @@ def test_execution():
     candidate_end = dna_locs - 10 + 66  # pam + 3 + DOWNSTREAM
     candidate_dna = dna[candidate_start:candidate_end]
     print(dna_locs)
-    all_mutations = get_all_mutations([dna_locs], [inv_dna_locs], dna, inv_dna_full, only_once=True)
+    all_mutations = get_all_mutations([dna_locs], [inv_dna_locs], dna, inv_dna_full, only_once=False)
 
     # at this point, we have everything we need to output the results
     write_results([frontmatter[0]], [all_mutations], [dna], False)
-
 
 if config.RUN_IN_EXECUTION_TESTING_MODE:
     test_execution()

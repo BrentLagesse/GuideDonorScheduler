@@ -37,9 +37,10 @@ RANK_COLUMN_IN_RANK_FILE = 'Rank1'
 #
 # ----------------------------------------------------
 
-# WARNING !! Guide Library ouput files will be overwritten when output,
+# WARNING !! Guide Library output files will be overwritten when output,
 # be sure to move any modifications to input to avoid losing data.
 
+KILL_MODE = False
 RANK_FILE = 'guide_only_ranked_ordered_mock'
 GUIDE_LIBRARY_OUTPUT_FILE = 'Guide_Library_Output'
 GUIDE_LIBRARY_INPUT_FILE = 'Guide_Library_Input'
@@ -52,6 +53,11 @@ DEFAULT_IN_FILES = ['S288C_YCL032W_STE50_flanking.fsa',
                     'S288C_YIL144W_NDC80_flanking.fsa',
                     'NUF2_1000flanking.fsa',
                     'TRP1_1000flanking.fsa'] # Set this up
+
+# For KILL MODE testing
+if KILL_MODE:
+    DEFAULT_IN_FILES = ['cds_from_genomic.fna']
+    MAX_PAMS = 3
 
 DEFAULT_OUT_FILE = "Mutation_Results_Combined_Output"
 
@@ -83,9 +89,9 @@ PRINT_MUTATION_RESULTS = True
 PRINT_GUIDE_LIBRARY = True
 
 KILL_MUTATION_ID_SUFFIX = 'KILL_GUIDE'
-# Add collumn to guide library output of just guide, just one,
+# Add column to guide library output of just guide, just one,
 # prefer GATC-guide
-# Add priority collumn, automatically rank the guides in based on their priority
+# Add priority column, automatically rank the guides in based on their priority
 
 # collumn 1 = id
 # 2 = guide
@@ -99,6 +105,9 @@ KILL_MUTATION_ID_SUFFIX = 'KILL_GUIDE'
 
 GENE_START_BUFFER = 1000
 GENE_END_BUFFER = 1000
+if KILL_MODE:
+    GENE_START_BUFFER = 0
+    GENE_END_BUFFER = 0
 UP_ACIDS = 6
 DOWN_ACIDS = 4
 
@@ -160,6 +169,10 @@ stop = ['TAA', 'TAG', 'TGA']
 
 # Kill mutation
 KILL_MUTATION = ['*', stop[0]]
+
+if KILL_MODE:
+    mutations_to_attempt = dict()
+    mutations_to_attempt['*'] = 'stop'
 
 # ----------------------------------------------------
 #
