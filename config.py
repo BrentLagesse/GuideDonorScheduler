@@ -39,6 +39,7 @@ RANK_COLUMN_IN_RANK_FILE = 'Rank1'
 # SILENT_MUTATION_MINIMUM tells us when to fail if we cannot do that number of mutations in the configured mode
 SILENT_MUTATION_MODE = 'seed'
 SILENT_MUTATION_MINIMUM = 1
+SILENT_MUTATION_MAXIMUM = 10   # this is for testing purposes currently
 
 # ----------------------------------------------------
 #

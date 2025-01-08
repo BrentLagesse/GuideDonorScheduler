@@ -408,7 +408,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[
                                                                                    first_amino_acid_loc + 3:]
                 # keep going if we are doing silent mutations
-                if mutant[0] == '*' and mutant[1] == '*':
+                if mutant[0] == '*' and mutant[1] == '*' and (total_mutations + 1) < config.SILENT_MUTATION_MAXIMUM:
                     return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant,
                                             decision_path, mutation_location=mutation_location,
                                             distance_from_pam=distance_from_pam + 3, down=down, complement=complement, total_mutations=total_mutations+1)
@@ -421,7 +421,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                 if total_mutations < config.SILENT_MUTATION_MINIMUM:  # We didn't find enough mutations
                     if config.VERBOSE_EXECUTION:
                         print('Could only find ' + str(total_mutations) + ' mutations and minimum is ' + str(config.SILENT_MUTATION_MINIMUM))
-                    decision_path += 'Could only find ' + str(total_mutations) + ' mutations and minimum is ' + str(config.SILENT_MUTATION_MINIMUM) + '. '
+                    decision_path += 'Could only find ' + str(total_mutations) + ' mutations and minimum is ' + str(config.SILENT_MUTATION_MINIMUM) + '. '  # this doesn't actually show up because it is a failed mutation
                     return False, None, None, actual_mutation, decision_path
                 else:
                     # we got enough mutations.  Carry on.
