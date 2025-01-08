@@ -275,7 +275,7 @@ def insert_extra_sequence(candidate_dna, guide):
 
 
 def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, decision_path, keep_trying=False, distance_from_pam=0,
-                     mutation_location=-1, complement=False, down=False):
+                     mutation_location=-1, complement=False, down=False, total_mutations=0):
 
     #global amino_acid_number
     if complement:
@@ -293,17 +293,24 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
         pam_indicator = 'GG'
         offset = -3
 
+    # config for silent mutations
+    try_until = 8  # this is our default for now, but I'm still doing the checks in case we change this later
+    if config.SILENT_MUTATION_MODE == 'seed':
+        try_until = 8
+    elif config.SILENT_MUTATION_MODE == 'guide':
+        try_until = 20
+
     actual_mutation = [mutant[0], mutant[1]]
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc + 3]
     if first_amino_acid_loc == mutation_location:  # we would be replacing the mutation
         if distance_from_pam <= 5:  # don't mutate
             if config.VERBOSE_EXECUTION:
-                print('we did not mutate the pam because the mutation was withing 5 base pairs of pam')
+                print('we did not mutate the pam because the mutation was within 5 base pairs of pam')
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
             decision_path += "Couldn't Mutate " + amino_acid_str + ". "
             return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant, decision_path, mutation_location=mutation_location,
-                                    distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
+                                    distance_from_pam=distance_from_pam + 3, down=down, complement=complement, total_mutations=total_mutations)
 
         return False, None, None, actual_mutation, decision_path
     if config.PRINT_MUTATION_CHECKS:
@@ -380,8 +387,18 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
 
             # This is from when I thought we couldn't introduce a new GG
 
+
+            # if we are replacing a silent mutation outside of our range
+            if mutant[0] == '*' and mutant[1] == '*' and distance_from_pam > try_until:
+                replaceable = False
+
             # we are safe to make a swap here
+
+
+            #TODO:  i am failing more when i have the full guide to work with than the seed, so something is wrong
+
             if replaceable:
+
                 actual_mutation[0] = string_to_acid[candidate_dna[first_amino_acid_loc:first_amino_acid_loc + 3]]
                 actual_mutation[1] = string_to_acid[mutation]
                 if not config.USE_DEBUG_MUTATION:
@@ -390,20 +407,35 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                 else:
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[
                                                                                    first_amino_acid_loc + 3:]
-                return True, candidate_dna, distance_from_pam, actual_mutation, decision_path
+                # keep going if we are doing silent mutations
+                if mutant[0] == '*' and mutant[1] == '*':
+                    return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant,
+                                            decision_path, mutation_location=mutation_location,
+                                            distance_from_pam=distance_from_pam + 3, down=down, complement=complement, total_mutations=total_mutations+1)
+                else:
+                    return True, candidate_dna, distance_from_pam, actual_mutation, decision_path
         if not replaceable and not down:
-            if distance_from_pam > 8:  # Couldn't find anything in the seed, so quit -- we would be 11 from pam on next run
-                if config.VERBOSE_EXECUTION:
-                    print('Could not find a replacement in the seed')
-                return False, None, None, actual_mutation, decision_path
+            if distance_from_pam > try_until:  # we ran out of space to look
+                #if config.VERBOSE_EXECUTION:
+                #    print('Could not find a replacement in the ' + config.SILENT_MUTATION_MODE)
+                if total_mutations < config.SILENT_MUTATION_MINIMUM:  # We didn't find enough mutations
+                    if config.VERBOSE_EXECUTION:
+                        print('Could only find ' + str(total_mutations) + ' mutations and minimum is ' + str(config.SILENT_MUTATION_MINIMUM))
+                    decision_path += 'Could only find ' + str(total_mutations) + ' mutations and minimum is ' + str(config.SILENT_MUTATION_MINIMUM) + '. '
+                    return False, None, None, actual_mutation, decision_path
+                else:
+                    # we got enough mutations.  Carry on.
+                    return True, candidate_dna, distance_from_pam, actual_mutation, decision_path
+                #return False, None, None, actual_mutation, decision_path
+
             mutant[0] = '*'  # these two *s force any silent mutation
             mutant[1] = '*'
             decision_path += "Couldn't Mutate " + amino_acid_str + ". "
             return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant, decision_path, mutation_location=mutation_location,
-                                        distance_from_pam=distance_from_pam + 3, down=down, complement=complement)
+                                        distance_from_pam=distance_from_pam + 3, down=down, complement=complement, total_mutations=total_mutations)
 
     if config.VERBOSE_EXECUTION:
-        print('Mutant was not desireable')
+        print('Mutant was not desirable')
 
     decision_path += "Couldn't Mutate " + amino_acid_str + ". "
     return False, None, None, actual_mutation, decision_path
