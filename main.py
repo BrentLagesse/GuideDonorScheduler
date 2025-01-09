@@ -208,7 +208,7 @@ def create_guides(dna, loc, complement):
     if complement:
         return invert_dna(dna[loc+3:loc+23])
     else:
-        return dna[loc - 20:loc]
+        return dna[loc - config.GUIDE_LENGTH:loc]
 
 
 # Returns a list of guides subtracting all duplicates, leaving guides of either highest priority, or the first instance of a gene
@@ -298,7 +298,7 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
     if config.SILENT_MUTATION_MODE == 'seed':
         try_until = 8
     elif config.SILENT_MUTATION_MODE == 'guide':
-        try_until = 20
+        try_until = config.GUIDE_LENGTH
 
     actual_mutation = [mutant[0], mutant[1]]
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc + 3]
@@ -330,8 +330,8 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
     if config.PRINT_MUTATION_CHECKS:
         print("Currently checking " + str(amino_acid) + " for " + str(mutant[0]) + ".")
 
-    if mutant[0] == amino_acid or mutant[0] == '*':  # we found our target, lets make the swap!
-        if mutant[0] == '*' and mutant[1] == '*':
+    if mutant[0] == amino_acid or mutant[0] == '*' or mutant[0] == mutant[1]:  # we found our target, lets make the swap!
+        if mutant[0] == '*' and mutant[1] == '*' or mutant[0] == mutant[1]:
             valid_mutations = codons[amino_acid]  # choose a silent mutation for whatever we are looking at
         else:
             valid_mutations = codons[mutant[1]]  # get a list of valid mutations
@@ -389,13 +389,13 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
 
 
             # if we are replacing a silent mutation outside of our range
-            if mutant[0] == '*' and mutant[1] == '*' and distance_from_pam > try_until:
+            if (mutant[0] == '*' and mutant[1] == '*' or mutant[0] == mutant[1]) and distance_from_pam > try_until:
                 replaceable = False
 
             # we are safe to make a swap here
 
 
-            #TODO:  i am failing more when i have the full guide to work with than the seed, so something is wrong
+
 
             if replaceable:
 
@@ -408,10 +408,12 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
                     candidate_dna = candidate_dna[:first_amino_acid_loc] + 'ZZZ' + candidate_dna[
                                                                                    first_amino_acid_loc + 3:]
                 # keep going if we are doing silent mutations
-                if mutant[0] == '*' and mutant[1] == '*' and (total_mutations + 1) < config.SILENT_MUTATION_MAXIMUM:
+                if (mutant[0] == '*' and mutant[1] == '*' or mutant[0] == mutant[1]) and (total_mutations + 1) < config.SILENT_MUTATION_MAXIMUM:
                     return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant,
                                             decision_path, mutation_location=mutation_location,
                                             distance_from_pam=distance_from_pam + 3, down=down, complement=complement, total_mutations=total_mutations+1)
+                elif mutant[0] == mutant[1] and total_mutations < config.SILENT_MUTATION_MINIMUM:  # if we made a mutation, but it wasn't enough to reach the minimum, fail this one
+                    return False, None, None, actual_mutation, decision_path
                 else:
                     return True, candidate_dna, distance_from_pam, actual_mutation, decision_path
         if not replaceable and not down:
@@ -793,11 +795,23 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
             size_of_first_sequence = len(config.first_sequence)
             size_of_second_sequence = len(config.second_sequence)
-            total_to_add = size_of_first_sequence + size_of_second_sequence + 20
+            total_to_add = size_of_first_sequence + size_of_second_sequence + config.GUIDE_LENGTH
             candidate_dna = insert_extra_sequence(candidate_dna, guide)
             # we just added 52 + 20 (guide) basepairs
             # guide pam mutation mutationloc dna
             # if we used a wildcard, replace it with what we actually mutated
+            #
+            # class MutationTracker:
+            #     guide: str
+            #     pam: int
+            #     mutation: []
+            #     mutation_loc: int
+            #     dna: str
+            #     complement: bool
+            #     pam_location_in_gene: int
+            #     distance_from_pam: int
+            #     original_pam: str
+            #     justification: str
 
             result = MutationTracker(guide, pam_loc + total_to_add, actual_mutation, mutation_location + total_to_add, candidate_dna, complement, pam,
                                      d_pam, pam_string, decision_path)

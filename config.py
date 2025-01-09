@@ -10,7 +10,7 @@ mutations_to_attempt = dict()
 # To add mutations refer to template:
 # mutations_to_attempt['mutation_from'] = 'mutation_to'
 # Use '*' in place of 'mutation_from' to mutate every acid
-mutations_to_attempt['NULL'] = 'NULL'
+mutations_to_attempt['gly'] = 'ile'
 
 BP_LENGTH = 132 # This changes the length of the donor sequence
 
@@ -37,8 +37,8 @@ RANK_COLUMN_IN_RANK_FILE = 'Rank1'
 # guide -- mutates everything in the seed/guide that it can
 # seed -- mutates everything in the seed that it can
 # SILENT_MUTATION_MINIMUM tells us when to fail if we cannot do that number of mutations in the configured mode
-SILENT_MUTATION_MODE = 'seed'
-SILENT_MUTATION_MINIMUM = 1
+SILENT_MUTATION_MODE = 'guide'
+SILENT_MUTATION_MINIMUM = 2
 SILENT_MUTATION_MAXIMUM = 10   # this is for testing purposes currently
 
 # ----------------------------------------------------
