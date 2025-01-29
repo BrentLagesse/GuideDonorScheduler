@@ -7,7 +7,7 @@ import sys
 # fastaparser, xlrd, xlutils and xlwt modules need to be installed.
 # Can be done via pip install <module>
 
-import fastaparser
+#import fastaparser
 import xlwt
 from xlwt import Workbook
 import xlrd
@@ -300,19 +300,20 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
     elif config.SILENT_MUTATION_MODE == 'guide':
         try_until = config.GUIDE_LENGTH
 
+
     actual_mutation = [mutant[0], mutant[1]]
     amino_acid_str = candidate_dna[first_amino_acid_loc: first_amino_acid_loc + 3]
-    if first_amino_acid_loc == mutation_location:  # we would be replacing the mutation
-        if distance_from_pam <= 5:  # don't mutate
-            if config.VERBOSE_EXECUTION:
-                print('we did not mutate the pam because the mutation was within 5 base pairs of pam')
-            mutant[0] = '*'  # these two *s force any silent mutation
-            mutant[1] = '*'
-            decision_path += "Couldn't Mutate " + amino_acid_str + ". "
-            return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant, decision_path, mutation_location=mutation_location,
-                                    distance_from_pam=distance_from_pam + 3, down=down, complement=complement, total_mutations=total_mutations)
+    if first_amino_acid_loc == mutation_location:  # we would be replacing the mutation, so skip it
+        #if distance_from_pam <= 5:  # don't mutate
+        if config.VERBOSE_EXECUTION:
+            print('we did not mutate the pam because the mutation was within 5 base pairs of pam')
+        mutant[0] = '*'  # these two *s force any silent mutation
+        mutant[1] = '*'
+        decision_path += "Did not Mutate " + amino_acid_str + " because it is the real mutation. "
+        return perform_mutation(candidate_dna, first_amino_acid_loc + offset, pam_case, mutant, decision_path, mutation_location=mutation_location,
+                                distance_from_pam=distance_from_pam + 3, down=down, complement=complement, total_mutations=total_mutations)
 
-        return False, None, None, actual_mutation, decision_path
+        #return False, None, None, actual_mutation, decision_path
     if config.PRINT_MUTATION_CHECKS:
         print(amino_acid_str)
     if amino_acid_str in string_to_acid:  # if this is something that isn't an amino acid, just quit
@@ -450,6 +451,9 @@ def perform_mutation(candidate_dna, first_amino_acid_loc, pam_case, mutant, deci
 def create_mutations(dna, pam, mutant, complement=False, only_once=False):
     global gs
     global guide_lib
+
+    if pam == 1126:
+        pass
 
     if pam == config.GENE_START_BUFFER + 8:    # was 1008
         pass

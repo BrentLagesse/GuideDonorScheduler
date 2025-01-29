@@ -10,7 +10,7 @@ mutations_to_attempt = dict()
 # To add mutations refer to template:
 # mutations_to_attempt['mutation_from'] = 'mutation_to'
 # Use '*' in place of 'mutation_from' to mutate every acid
-mutations_to_attempt['gly'] = 'ile'
+mutations_to_attempt['ile'] = 'val'
 
 BP_LENGTH = 132 # This changes the length of the donor sequence
 
