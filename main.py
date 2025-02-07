@@ -538,13 +538,14 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
 
     if (not null_active):
         # Setting up for multiple potentials
-        decision_path = ''
+
         for ordering in range(2):
             if (ordering+order) % 2 == 0:  # only do upstream if we are still in the gene
                 if complement:   # we have fo fix up the first amino acid location if we are on the reverse
                     first_amino_acid_loc = pam - UPSTREAM - pam_case
 
                 for i in range(UPSTREAM - 3, -1, -3):  # check upstream, then check downstream
+                    decision_path = ''
                     candidate_first_amino_acid_loc = first_amino_acid_loc + i - candidate_start
                     temp = candidate_first_amino_acid_loc + candidate_start
 
@@ -585,6 +586,7 @@ def create_mutations(dna, pam, mutant, complement=False, only_once=False):
                     first_amino_acid_loc = pam - pam_case
 
                 for i in range(0, DOWNSTREAM, 3):  # check upstream, then check downstream
+                    decision_path = ''
                     # convert first_amino_acid_loc from global dna to candidate dna
                     # candidate_first_amino_acid_loc = first_amino_acid_loc - candidate_start
 
@@ -1179,8 +1181,9 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
     _only_once = only_once
 
     mutations_output = []
+    mutation_count = 0
     if not config.DEBUG_INVERSE:
-        mutation_count = 0
+
         for loc in _dna_locs:
             # I don't think we need to actually find the guides here since it is just pam - 20
             # guides = create_guides(dna, loc)
@@ -1189,10 +1192,9 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
             for m in config.mutations_to_attempt.items():
                 mutated_dna = create_mutations(_dna, loc, list(m), only_once=_only_once)
                 if mutated_dna is not None:
-                    mutation_count += 1
-    #                for md in mutated_dna:
-                    mutations_output.append(mutated_dna[0])   #This is returning 2 mutations even though it is only supposed to do 1 #FIXME
-
+                    for md in mutated_dna:
+                        mutations_output.append(md)
+                        mutation_count += 1
             if config.KILL_MODE and mutation_count == config.MAX_PAMS:  # Talia only wants 3 pams to get a stop codon
                 break
 
@@ -1209,16 +1211,8 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
             mutated_dna = create_mutations(_dna, loc, list(m), only_once=_only_once,
                                            complement=True)  # returns a mutation tracker
             if mutated_dna is not None:
-                # revert to original  -- Maybe we don't need to do this?
-                # inv_guide = mutated_dna.guide
-                # inv_pam = len(mutated_dna.dna) - mutated_dna.pam
-                # inv_mutation = []
-                # inv_mutation_loc = len(mutated_dna.dna) - mutated_dna.mutation_loc
-                # inv_dna = invert_dna(mutated_dna.dna)
-                # inv_mutated_dna = MutationTracker(inv_guide, inv_pam, mutated_dna.mutation, inv_mutation_loc, inv_dna)
-                # all_mutations.append(inv_mutated_dna)
-
                 for md in mutated_dna:
+                    mutation_count += 1
                     mutations_output.append(md)
 
     return mutations_output
