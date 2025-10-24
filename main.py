@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass
 import sys
 
-
+import fastaparser
 # fastaparser, xlrd, xlutils and xlwt modules need to be installed.
 # Can be done via pip install <module>
 
@@ -115,7 +115,8 @@ def get_dna():
         frontmatter = []
         for line in in_files:
             if config.KILL_MODE:
-                r = fastaparser.Reader(open(line, 'r'))
+                fasta_file = open(line, 'r')
+                r = fastaparser.Reader(fasta_file)
                 for seq in r:
                     # seq is a FastaSequence object
                     # print('ID:', seq.id)
@@ -124,6 +125,7 @@ def get_dna():
                     # print()
                     input_data.append(seq.sequence_as_string())
                     frontmatter.append(seq.id)
+                fasta_file.close()
 
                 return frontmatter, input_data, None
             else:
