@@ -9,6 +9,7 @@ import fastaparser
 
 #import fastaparser
 import xlwt
+from tensorflow.python.ops.metrics_impl import false_negatives
 from xlwt import Workbook
 import xlrd
 import xlutils
@@ -1190,15 +1191,19 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
             # I don't think we need to actually find the guides here since it is just pam - 20
             # guides = create_guides(dna, loc)
             # for g in guides:   # for each guide do each mutation
-
+            hit_max_pams = False
             for m in config.mutations_to_attempt.items():
                 mutated_dna = create_mutations(_dna, loc, list(m), only_once=_only_once)
                 if mutated_dna is not None:
                     for md in mutated_dna:
                         mutations_output.append(md)
                         mutation_count += 1
-            if config.KILL_MODE and mutation_count >= config.MAX_PAMS:  # Talia only wants 3 pams to get a stop codon
+                        if config.KILL_MODE and mutation_count >= config.MAX_PAMS:  # Talia only wants 3 pams to get a stop codon
+                            hit_max_pams = True
+                            break
+            if hit_max_pams:
                 break
+
 
 
     # class MutationTracker:
