@@ -4,12 +4,7 @@ from dataclasses import dataclass
 import sys
 
 import fastaparser
-# fastaparser, xlrd, xlutils and xlwt modules need to be installed.
-# Can be done via pip install <module>
-
-#import fastaparser
 import xlwt
-from tensorflow.python.ops.metrics_impl import false_negatives
 from xlwt import Workbook
 import xlrd
 import xlutils
