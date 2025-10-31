@@ -1197,7 +1197,7 @@ def get_all_mutations(_dna_locs, _inv_dna_locs, _dna, _inv_dna, only_once=False)
                     for md in mutated_dna:
                         mutations_output.append(md)
                         mutation_count += 1
-            if config.KILL_MODE and mutation_count == config.MAX_PAMS:  # Talia only wants 3 pams to get a stop codon
+            if config.KILL_MODE and mutation_count >= config.MAX_PAMS:  # Talia only wants 3 pams to get a stop codon
                 break
 
 
